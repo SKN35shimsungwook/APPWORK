@@ -1,0 +1,26 @@
+[project]
+name = "chapter01-development"
+version = "0.1.0"
+description = "Python 3.12, uv, Django 입문 프로젝트"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = ["django==5.2.7", "python-dotenv==1.1.1"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "pytest-django>=4.8,<5"]
+
+
+# pytest 실행 시 Django 설정 파일을 지정한다.
+[tool.pytest.ini_options]
+
+# Django 설정 모듈 지정
+DJANGO_SETTINGS_MODULE = "config.settings"
+
+# 테스트 파일을 검색할 디렉터리
+testpaths = ["tests"]
+
+# 테스트 파일 이름 규칙
+python_files = ["test_*.py"]
+
+# 실패, 건너뛰기 등 테스트 결과 요약
+addopts = "-ra"

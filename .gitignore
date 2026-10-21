@@ -1,0 +1,8 @@
+# 비밀정보·가상환경·로컬 DB는 어디에 있든 올리지 않는다
+.env
+.venv/
+__pycache__/
+*.py[cod]
+db.sqlite3
+.pytest_cache/
+.vscode/
