@@ -1,0 +1,28 @@
+# Python 바이트코드 캐시
+__pycache__/
+*.py[cod]
+
+# Python 가상환경
+.venv/
+venv/
+
+# 환경변수 및 비밀정보
+.env
+.env.*
+
+# 공개 가능한 설정 템플릿은 추적한다.
+!.env.example
+
+
+# 테스트 및 분석 캐시
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 빌드 결과물
+build/
+dist/
+*.egg-info/
+
+# SQLite 데이터베이스 파일
+db.sqlite3

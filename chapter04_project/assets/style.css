@@ -1,0 +1,34 @@
+/* 전체 화면의 기본 글꼴과 색상을 지정한다. */
+:root { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; color: #17243a; background: #f4f7fb; }
+* { box-sizing: border-box; }
+body { margin: 0; line-height: 1.6; }
+.container { width: min(1080px, calc(100% - 36px)); margin: 0 auto; }
+.site-header { background: #19365c; color: white; padding: 20px 0; }
+.header-inner { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+h1, h2, h3 { margin-top: 0; }
+h1 { font-size: 1.55rem; margin-bottom: 0; }
+.subtitle { font-size: .88rem; opacity: .85; }
+.intro { padding: 32px 0 22px; }
+.intro p { color: #526174; }
+label { display: block; font-weight: 700; margin-bottom: 8px; }
+input { width: 100%; max-width: 460px; padding: 12px; border: 1px solid #b6c5d5; border-radius: 9px; font-size: 1rem; }
+.product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.product-card { background: white; padding: 22px; border: 1px solid #dce5ee; border-radius: 14px; box-shadow: 0 3px 12px #102c4910; }
+.product-icon { font-size: 2.6rem; margin-bottom: 12px; }
+.product-card h3 { margin-bottom: 6px; }
+.price { font-weight: 800; color: #1554a1; }
+button { cursor: pointer; border: 0; border-radius: 8px; background: #1658aa; color: white; padding: 10px 14px; font-weight: 700; }
+button:hover { background: #104780; }
+button:focus-visible, input:focus-visible { outline: 3px solid #e4a642; outline-offset: 2px; }
+.secondary { background: #e5eaf0; color: #25344b; }
+.secondary:hover { background: #d4dde8; }
+.cart { background: white; border-radius: 14px; padding: 22px; margin: 28px 0; border: 1px solid #dce5ee; }
+.cart-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#cart-items { padding-left: 20px; }
+#cart-items li { margin: 9px 0; }
+.remove { padding: 4px 8px; margin-left: 8px; background: #a92d37; }
+.total { font-weight: 800; text-align: right; font-size: 1.1rem; }
+.empty { grid-column: 1 / -1; color: #58677b; }
+.footer { color: #65748a; font-size: .85rem; padding-bottom: 26px; }
+@media (max-width: 760px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .header-inner { display: block; } }
+@media (max-width: 520px) { .product-grid { grid-template-columns: 1fr; } .cart-heading { align-items: flex-start; } }

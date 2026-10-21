@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>상품 카탈로그 | 제4장</title>
+  <link rel="stylesheet" href="assets/style.css">
+  <script src="assets/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <h1>상품 카탈로그</h1>
+      <span class="subtitle">HTML · CSS · JavaScript 실습</span>
+    </div>
+  </header>
+  <main class="container">
+    <section class="intro" aria-labelledby="catalog-title">
+      <h2 id="catalog-title">상품 목록</h2>
+      <p>검색하고 상품을 장바구니에 담아 보세요.</p>
+      <label for="search">상품 검색</label>
+      <input id="search" type="search" placeholder="상품명을 입력하세요" autocomplete="off">
+    </section>
+    <section id="product-list" class="product-grid" aria-live="polite"></section>
+    <section class="cart" aria-labelledby="cart-title">
+      <div class="cart-heading">
+        <h2 id="cart-title">장바구니</h2>
+        <button id="clear-cart" type="button" class="secondary">전체 비우기</button>
+      </div>
+      <ul id="cart-items" aria-live="polite"></ul>
+      <p id="cart-total" class="total">총액: 0원</p>
+    </section>
+  </main>
+  <footer class="container footer">제4장 실습 프로젝트 · 브라우저 로컬 실행</footer>
+</body>
+</html>

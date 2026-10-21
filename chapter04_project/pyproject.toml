@@ -1,0 +1,16 @@
+[project]
+name = "chapter04-web"
+version = "0.1.0"
+description = "제4장 HTML CSS JavaScript 상품 웹 화면"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra"
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+]
