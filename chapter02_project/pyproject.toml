@@ -1,0 +1,24 @@
+[project]
+name = "chapter02-products"
+version = "0.1.0"
+description = "제2장 Python 상품 데이터 처리 및 pytest 실습"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8,<10"]
+
+
+[tool.pytest.ini_options]
+
+# 테스트 파일을 검색할 디렉터리
+testpaths = ["tests"]
+
+# 테스트 파일 이름 규칙
+python_files = ["test_*.py"]
+
+# 프로젝트 루트의 catalog.py, shop.py를 테스트에서 import할 수 있게 한다.
+pythonpath = ["."]
+
+# 실패, 건너뛰기 등 테스트 결과 요약
+addopts = "-ra"
