@@ -1,0 +1,32 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Shop | Django 시작</title>
+<link rel="stylesheet" href="{% static 'shop/style.css' %}">
+</head>
+<body>
+<header class="header"><div class="wrap"><a href="{% url 'shop:home' %}">AI Shop</a><span>Django 첫 화면</span></div></header>
+<main class="wrap">
+<section class="hero"><p>CHAPTER 05</p><h1>Django 쇼핑몰 프로젝트 시작</h1><p>제4장의 정적 HTML을 Django 템플릿으로 확장한다.</p></section>
+<section aria-labelledby="product-title">
+<h2 id="product-title">상품 목록</h2>
+<div class="grid">
+        {% for product in products %}
+<article class="card">
+<div class="art" aria-hidden="true">SHOP</div>
+<h3>{{ product.name }}</h3>
+<p class="price">{{ product.price }}원</p>
+<p>{% if product.stock > 0 %}재고 {{ product.stock }}개{% else %}품절{% endif %}</p>
+</article>
+        {% empty %}
+<p>등록된 상품이 없다.</p>
+        {% endfor %}
+</div>
+</section>
+</main>
+<footer class="wrap footer">AI Shop · 학습용 Django 프로젝트</footer>
+</body>
+</html>
