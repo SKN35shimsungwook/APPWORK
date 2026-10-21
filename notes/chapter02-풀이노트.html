@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2장 상품 데이터 풀이 노트</title>
+<style>
+/* 레이아웃: 왼쪽 고정 목차 + 오른쪽 본문(약 46rem). 폰 폭에서는 목차가 위로 올라감 */
+:root {
+  --bg: #f4f7f5; --surface: #ffffff; --tint: #e7efea; --fg: #16231c; --muted: #5a6a61; --line: #d5dfd9;
+  --accent: #0c4b33; --on-accent: #ffffff; --accent-2: #2f9e6f;
+  --code-bg: #10201a; --code-fg: #d6eee1; --code-dim: #7fa592;
+  --warn: #a64a12; --warn-bg: #fbece1; --ok: #1d7249; --ok-bg: #e0f2e8; --next: #8a5a00; --next-bg: #fff2cf;
+  --f-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", Consolas, "D2Coding", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1512; --surface: #16201b; --tint: #1b2922; --fg: #e2ebe5; --muted: #98a99f; --line: #2a3830;
+  --accent: #6fd3a5; --on-accent: #0b1a13; --accent-2: #4fc08d;
+  --code-bg: #08100c; --code-fg: #cfe8da; --code-dim: #6f9482;
+  --warn: #f2a46c; --warn-bg: #36220f; --ok: #82d9aa; --ok-bg: #15301f; --next: #f3c654; --next-bg: #3a2e0c;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1512; --surface: #16201b; --tint: #1b2922; --fg: #e2ebe5; --muted: #98a99f; --line: #2a3830;
+  --accent: #6fd3a5; --on-accent: #0b1a13; --accent-2: #4fc08d;
+  --code-bg: #08100c; --code-fg: #cfe8da; --code-dim: #6f9482;
+  --warn: #f2a46c; --warn-bg: #36220f; --ok: #82d9aa; --ok-bg: #15301f; --next: #f3c654; --next-bg: #3a2e0c;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.75; padding-inline: 16px; padding-block: 0 4rem; }
+.wrap { max-width: 72rem; margin: 0 auto; display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 3rem; }
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; padding-top: 2.5rem; font-size: .88rem; }
+nav.toc p { font-size: .72rem; letter-spacing: .08em; color: var(--muted); margin: 0 0 .5rem; font-weight: 700; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; counter-reset: t; }
+nav.toc a { color: var(--muted); text-decoration: none; display: block; padding: .2rem .5rem; border-radius: 6px; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); background: var(--tint); outline: none; }
+main { min-width: 0; max-width: 48rem; }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0,1fr); gap: 0; }
+  nav.toc { position: static; padding-top: 1.5rem; }
+  nav.toc ol { display: flex; flex-wrap: wrap; gap: .3rem; }
+  nav.toc a { border: 1px solid var(--line); background: var(--surface); }
+}
+
+header.hero { padding-block: 2.5rem 1.5rem; border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: .75rem; letter-spacing: .1em; color: var(--accent); font-weight: 700; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); line-height: 1.25; margin: .4rem 0 .8rem; text-wrap: balance; letter-spacing: -.01em; }
+h1 .v { font-family: var(--f-code); font-weight: 600; font-size: .62em; color: var(--accent); vertical-align: middle; }
+.lede { color: var(--muted); max-width: 40rem; margin: 0; }
+section { padding-block: 2.6rem 0.5rem; scroll-margin-top: 1rem; }
+h2 { font-size: 1.5rem; line-height: 1.35; margin: 0 0 .3rem; text-wrap: balance; }
+h2 small { display: block; font-size: .78rem; font-weight: 500; color: var(--muted); letter-spacing: .02em; }
+h3 { font-size: 1.1rem; margin: 2rem 0 .4rem; }
+p { margin: .6rem 0; max-width: 42rem; }
+code { font-family: var(--f-code); font-size: .86em; background: var(--tint); padding: .08em .35em; border-radius: 4px; }
+pre { font-family: var(--f-code); font-size: .84rem; line-height: 1.65; background: var(--code-bg); color: var(--code-fg); padding: 1rem 1.1rem; border-radius: 10px; overflow-x: auto; margin: .8rem 0; }
+pre code { background: none; padding: 0; font-size: 1em; }
+pre .c { color: var(--code-dim); }
+pre .k { color: #8fe0b6; font-weight: 600; }
+strong { font-weight: 700; }
+.note { border-left: 3px solid var(--accent-2); background: var(--surface); padding: .7rem 1rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: .95rem; }
+.note.warn { border-color: var(--warn); background: var(--warn-bg); }
+.scroll { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 30rem; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; color: var(--muted); letter-spacing: .04em; font-weight: 700; background: var(--tint); }
+td code { white-space: nowrap; }
+
+/* 1. 도구 층 */
+.layers { display: grid; gap: 0; margin: 1.2rem 0; }
+.layer { border: 1px solid var(--line); background: var(--surface); padding: .8rem 1rem; display: grid; grid-template-columns: 9.5rem minmax(0,1fr); gap: 1rem; align-items: center; }
+.layer + .layer { border-top: 0; }
+.layer:first-child { border-radius: 10px 10px 0 0; }
+.layer:last-child { border-radius: 0 0 10px 10px; }
+.layer b { font-family: var(--f-code); font-size: .95rem; color: var(--accent); }
+.layer span { font-size: .92rem; }
+.layer em { font-style: normal; color: var(--muted); font-size: .82rem; display: block; }
+.layer.top { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.layer.top b, .layer.top em { color: var(--on-accent); }
+@media (max-width: 520px) { .layer { grid-template-columns: minmax(0,1fr); gap: .2rem; } }
+
+/* 2. 진행 지도 */
+.journey { list-style: none; padding: 0; margin: 1.2rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: .6rem; counter-reset: s; }
+.journey li { counter-increment: s; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem .85rem; font-size: .9rem; line-height: 1.5; display: grid; gap: .25rem; }
+.journey li::before { content: counter(s); font-family: var(--f-code); font-size: .75rem; color: var(--muted); }
+.journey li b { font-size: .95rem; }
+.journey li code { font-size: .78rem; justify-self: start; }
+.pill { justify-self: start; font-size: .72rem; font-weight: 700; padding: .05rem .5rem; border-radius: 99px; }
+.pill.done { background: var(--ok-bg); color: var(--ok); }
+.pill.next { background: var(--next-bg); color: var(--next); }
+.pill.todo { background: var(--tint); color: var(--muted); }
+.journey li.is-next { border: 2px solid var(--next); }
+
+/* 다이어그램 공통 */
+figure { margin: 1.2rem 0; }
+figcaption { font-size: .82rem; color: var(--muted); margin-top: .4rem; }
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+svg .box.hl { fill: var(--tint); stroke: var(--accent-2); }
+svg .box.db { fill: var(--tint); stroke: var(--accent); }
+svg .t { fill: var(--fg); font-family: var(--f-code); font-size: 15px; font-weight: 600; }
+svg .s { fill: var(--muted); font-family: var(--f-body); font-size: 12.5px; }
+svg .ar { stroke: var(--accent-2); stroke-width: 2; fill: none; }
+svg .ar.back { stroke-dasharray: 5 4; }
+svg .num { fill: var(--accent); }
+svg .numt { fill: var(--on-accent); font-family: var(--f-code); font-size: 12px; font-weight: 600; }
+svg .head { fill: var(--accent-2); }
+
+/* 갈림길 */
+.paths { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .8rem; margin: 1rem 0; }
+.path { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; font-size: .92rem; min-width: 0; }
+.path h4 { margin: 0 0 .3rem; font-size: 1rem; }
+.path ol { margin: .4rem 0 0; padding-left: 1.2rem; }
+.path.mine { border: 2px solid var(--accent-2); }
+@media (max-width: 600px) { .paths { grid-template-columns: minmax(0,1fr); } }
+
+/* 실수 카드 */
+.oops { display: grid; gap: .6rem; margin: 1rem 0; }
+.oop { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: .88rem; }
+.oop div { padding: .6rem .8rem; min-width: 0; }
+.oop .bad { background: var(--warn-bg); }
+.oop .good { background: var(--ok-bg); }
+.oop code { background: none; padding: 0; word-break: break-all; }
+.oop small { display: block; color: var(--muted); font-size: .78rem; margin-top: .2rem; }
+.oop .lbl { font-size: .7rem; font-weight: 700; letter-spacing: .06em; display: block; }
+.oop .bad .lbl { color: var(--warn); }
+.oop .good .lbl { color: var(--ok); }
+@media (max-width: 560px) { .oop { grid-template-columns: minmax(0,1fr); } }
+
+/* 파일 탐색기 */
+.explorer { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0,1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); margin: 1.2rem 0; }
+.tree { list-style: none; margin: 0; padding: .6rem; border-right: 1px solid var(--line); background: var(--tint); font-family: var(--f-code); font-size: .84rem; }
+.tree button { all: unset; cursor: pointer; display: block; width: 100%; box-sizing: border-box; padding: .25rem .5rem; border-radius: 6px; color: var(--fg); }
+.tree button:hover { background: var(--surface); }
+.tree button:focus-visible { outline: 2px solid var(--accent-2); }
+.tree button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.tree .in { padding-left: 1.2rem; }
+.tree .gone { text-decoration: line-through; opacity: .6; }
+.detail { padding: 1rem 1.2rem; min-width: 0; }
+.detail h4 { font-family: var(--f-code); margin: 0; font-size: 1.05rem; color: var(--accent); }
+.detail .when { display: inline-block; font-size: .74rem; font-weight: 700; background: var(--tint); color: var(--muted); padding: .05rem .55rem; border-radius: 99px; margin: .35rem 0 .3rem; }
+.detail p { font-size: .93rem; }
+.detail .an { font-size: .88rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: .5rem; margin-top: .6rem; }
+@media (max-width: 620px) { .explorer { grid-template-columns: minmax(0,1fr); } .tree { border-right: 0; border-bottom: 1px solid var(--line); } }
+
+/* BASE_DIR 트리 */
+.pathtree { font-family: var(--f-code); font-size: .88rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; line-height: 2; overflow-x: auto; white-space: nowrap; }
+.pathtree .tag { font-size: .74rem; font-weight: 600; padding: .05rem .5rem; border-radius: 99px; margin-left: .6rem; font-family: var(--f-body); }
+.tag.a { background: var(--accent); color: var(--on-accent); }
+.tag.b { background: var(--tint); color: var(--accent); border: 1px solid var(--accent-2); }
+.tag.c { background: var(--next-bg); color: var(--next); }
+.pathtree .dim { color: var(--muted); }
+
+/* .env 흐름 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 1rem 0; font-size: .86rem; }
+.flow .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .7rem; line-height: 1.4; }
+.flow .chip b { font-family: var(--f-code); display: block; font-size: .85rem; }
+.flow .chip small { color: var(--muted); }
+.flow .chip.key { border-color: var(--accent-2); background: var(--tint); }
+.flow .chip.lock { border-color: var(--warn); background: var(--warn-bg); }
+.flow .arr { color: var(--accent-2); font-weight: 700; }
+
+/* 미들웨어 */
+.mw { display: grid; grid-template-columns: 2.4rem minmax(0,1fr) 2.4rem; gap: 0 .6rem; margin: 1.2rem 0; }
+.mw .side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; font-size: .75rem; font-weight: 700; color: var(--accent-2); writing-mode: vertical-rl; letter-spacing: .1em; border-radius: 99px; background: var(--tint); padding: .8rem 0; }
+.mw .side.up { color: var(--accent); }
+.mw ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; counter-reset: m; }
+.mw li { counter-increment: m; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .7rem; display: grid; grid-template-columns: 1.4rem minmax(0, 13.5rem) minmax(0,1fr); gap: .5rem; font-size: .84rem; align-items: baseline; }
+.mw li::before { content: counter(m); font-family: var(--f-code); color: var(--muted); font-size: .75rem; }
+.mw li b { font-family: var(--f-code); font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
+.mw li span { color: var(--muted); }
+.mw li.view { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.mw li.view::before { content: ""; }
+.mw li.view span { color: var(--on-accent); }
+@media (max-width: 560px) { .mw li { grid-template-columns: 1.2rem minmax(0,1fr); } .mw li span { grid-column: 2; } }
+
+/* 앱 순서 */
+.seq { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .6rem 0 1rem; font-size: .84rem; }
+.seq span { background: var(--surface); border: 1px solid var(--line); padding: .3rem .6rem; border-radius: 6px; }
+.seq i { font-style: normal; color: var(--accent-2); }
+.seq .lead { background: none; border: 0; font-weight: 700; padding-left: 0; }
+
+/* 퀴즈, 체크리스트 */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem 1rem; margin: .5rem 0; }
+details summary { cursor: pointer; font-weight: 500; }
+details summary::marker { color: var(--accent-2); }
+details[open] summary { margin-bottom: .4rem; color: var(--accent); }
+details p { font-size: .93rem; margin: .3rem 0; }
+.checks { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .35rem; }
+.checks label { display: flex; gap: .6rem; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; cursor: pointer; font-size: .93rem; }
+.checks input { accent-color: var(--accent-2); margin-top: .35rem; width: 1rem; height: 1rem; flex: none; }
+.checks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.checks input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.count { font-family: var(--f-code); font-size: .85rem; color: var(--muted); }
+footer { margin-top: 3rem; font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* 2~5장 공통 추가 */
+.chapnav { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1rem; font-size: .8rem; }
+.chapnav a { color: var(--muted); text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: .15rem .6rem; border-radius: 99px; }
+.chapnav a[aria-current="page"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chapnav a:hover, .chapnav a:focus-visible { border-color: var(--accent-2); outline: none; }
+.out { font-family: var(--f-code); font-size: .82rem; background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: .6rem .8rem; white-space: pre-wrap; margin: .5rem 0; }
+.out b { color: var(--ok); font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.grid2 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; min-width: 0; font-size: .92rem; }
+.grid2 h4 { margin: 0 0 .3rem; font-size: .98rem; }
+.grid2 pre { margin: .5rem 0 0; }
+@media (max-width: 600px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 1rem 0; }
+.cols3 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; text-align: center; font-size: .88rem; }
+.cols3 .bar { display: grid; gap: 4px; margin: .6rem auto 0; max-width: 9rem; }
+.cols3 .bar i { display: block; height: 22px; border-radius: 4px; background: var(--tint); border: 1px solid var(--accent-2); }
+@media (max-width: 520px) { .cols3 { grid-template-columns: minmax(0, 1fr); } }
+
+</style>
+<div class="wrap">
+<nav class="toc" aria-label="목차">
+  <p>목차</p>
+  <ol>
+    <li><a href="#big">큰 그림</a></li>
+    <li><a href="#files">파일 탐색기</a></li>
+    <li><a href="#money">돈 계산</a></li>
+    <li><a href="#flow">조건·반복·검색</a></li>
+    <li><a href="#order">주문 함수</a></li>
+    <li><a href="#json">JSON·예외</a></li>
+    <li><a href="#test">pytest 8개</a></li>
+    <li><a href="#diff">교재와 다른 곳</a></li>
+    <li><a href="#run">실행 순서</a></li>
+    <li><a href="#quiz">확인 문제</a></li>
+    <li><a href="#check">완료 점검표</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <p class="eyebrow">PART 1 · 제2장 풀이</p>
+  <h1>Python 기본 문법과 상품 데이터 처리</h1>
+  <p class="lede">변수부터 함수·JSON·예외까지 파이썬 기본기를 상품 데이터 하나로 연습합니다. 1장에서 만든 uv + Python 3.12를 그대로 쓰고, Django는 아직 쓰지 않습니다.</p>
+  <div class="chapnav"><a href="chapter01-풀이노트.html">1장</a><a href="chapter02-풀이노트.html" aria-current="page">2장</a><a href="chapter03-풀이노트.html">3장</a><a href="chapter04-풀이노트.html">4장</a><a href="chapter05-풀이노트.html">5장</a></div>
+</header>
+
+<section id="big">
+  <h2>큰 그림<small>01~08 문법 예제가 모여 콘솔 쇼핑몰이 된다</small></h2>
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 820 230" role="img" aria-label="입력 데이터가 파이썬 기초 문법, catalog.py, shop.py를 거쳐 콘솔 출력과 pytest로 이어지는 흐름">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <path class="ar" d="M150 115 L 178 115" marker-end="url(#ah)"/>
+        <path class="ar" d="M330 115 L 358 115" marker-end="url(#ah)"/>
+        <path class="ar" d="M490 105 C 520 90, 520 62, 548 60" marker-end="url(#ah)"/>
+        <path class="ar" d="M490 128 C 520 150, 520 172, 548 175" marker-end="url(#ah)"/>
+        <path class="ar" d="M680 50 L 708 40" marker-end="url(#ah)"/>
+        <path class="ar" d="M680 70 L 708 92" marker-end="url(#ah)"/>
+        <rect class="box" x="20" y="85" width="130" height="60" rx="10"/>
+        <text class="t" x="85" y="112" text-anchor="middle">입력 데이터</text>
+        <text class="s" x="85" y="131" text-anchor="middle">상품명·가격·수량</text>
+        <rect class="box hl" x="180" y="85" width="150" height="60" rx="10"/>
+        <text class="t" x="255" y="112" text-anchor="middle">01~08 예제</text>
+        <text class="s" x="255" y="131" text-anchor="middle">변수·조건·반복·함수</text>
+        <rect class="box hl" x="360" y="85" width="130" height="60" rx="10"/>
+        <text class="t" x="425" y="112" text-anchor="middle">catalog.py</text>
+        <text class="s" x="425" y="131" text-anchor="middle">상품 목록·검색</text>
+        <rect class="box hl" x="550" y="30" width="130" height="60" rx="10"/>
+        <text class="t" x="615" y="57" text-anchor="middle">shop.py</text>
+        <text class="s" x="615" y="76" text-anchor="middle">주문·할인·재고</text>
+        <rect class="box" x="550" y="150" width="130" height="56" rx="10"/>
+        <text class="t" x="615" y="175" text-anchor="middle">07_json.py</text>
+        <text class="s" x="615" y="194" text-anchor="middle">JSON 저장·읽기</text>
+        <rect class="box" x="710" y="14" width="96" height="44" rx="10"/>
+        <text class="s" x="758" y="41" text-anchor="middle">콘솔 출력</text>
+        <rect class="box db" x="710" y="74" width="96" height="44" rx="10"/>
+        <text class="s" x="758" y="101" text-anchor="middle">pytest 8개</text>
+      </svg>
+    </div>
+    <figcaption>교재 3절 아키텍처. 입력 데이터 → 파이썬 자료 처리 → 공통 상품 목록 → 주문 처리 → 콘솔 결과. JSON 입출력과 pytest는 별도의 저장·검증 경로입니다.</figcaption>
+  </figure>
+  <div class="note"><strong>1장과의 관계:</strong> Python과 uv는 다시 설치하지 않고, 2장 프로젝트 전용 <code>.venv</code>만 새로 만듭니다. 1장의 <code>.venv</code> 폴더를 복사해 오면 안 됩니다. 가상환경은 프로젝트마다 따로 둡니다.</div>
+</section>
+
+<section id="files">
+  <h2>파일 탐색기<small>파일 이름을 누르면 무엇을 배우는지 나옵니다</small></h2>
+  <div class="explorer">
+    <ul class="tree" id="tree"></ul>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="money">
+  <h2>돈 계산은 정수로<small>02_calculate.py · 05_functions.py</small></h2>
+<pre><code>price = 35000
+quantity = 2
+discount_percent = 10
+subtotal = price * quantity                        <span class="c"># 70000</span>
+discount = subtotal * discount_percent // 100      <span class="c"># 7000</span>
+print(f"결제 금액: {subtotal - discount:,}원")       <span class="c"># 결제 금액: 63,000원</span></code></pre>
+  <div class="grid2">
+    <div><h4>왜 실수를 안 쓰나</h4><p>컴퓨터는 <code>0.1 + 0.2</code>를 <code>0.30000000000000004</code>로 계산합니다. 돈에 이런 오차가 붙으면 곤란하므로 원 단위 정수로 계산합니다.</p></div>
+    <div><h4>// 와 :,</h4><p><code>//</code>는 몫만 남기는 나눗셈이라 원 미만을 버립니다. f-string의 <code>{값:,}</code>는 천 단위 쉼표를 붙입니다.</p></div>
+  </div>
+  <p><code>05_functions.py</code>는 같은 계산을 <code>calculate_total(price, quantity, discount_percent=0)</code> 함수로 묶습니다. 할인율 기본값이 0이라 생략할 수 있고, 가격이 음수이거나 수량이 0 이하면 <code>raise ValueError</code>로 멈춥니다.</p>
+</section>
+
+<section id="flow">
+  <h2>조건·반복·검색<small>03_condition.py · 04_loop.py · catalog.py</small></h2>
+  <h3>조건문은 "잘못된 경우"부터</h3>
+<pre><code>if quantity &lt;= 0:
+    print("수량 오류")
+elif quantity &gt; stock:
+    print("재고 부족")
+else:
+    print("주문 가능")</code></pre>
+  <p>위에서부터 차례로 검사하고 처음 맞는 곳에서 멈춥니다. 가장 기본적인 오류인 "수량 0 이하"를 먼저 걸러냅니다.</p>
+
+  <h3>리스트 안의 딕셔너리</h3>
+<pre><code>products = [
+    {"name": "키보드", "stock": 5},
+    {"name": "마우스", "stock": 0},
+]
+for product in products:
+    if product["stock"] &gt; 0:
+        print(product["name"])       <span class="c"># 키보드</span></code></pre>
+  <p>상품 하나는 딕셔너리(<code>{"키": 값}</code>), 상품 여러 개는 그 딕셔너리를 담은 리스트입니다. 이 모양이 3장의 JSON 파일, 5장의 Django 템플릿까지 계속 쓰입니다.</p>
+
+  <h3>검색: 리스트 컴프리헨션 + casefold</h3>
+<pre><code>def search_products(keyword: str) -&gt; list[dict]:
+    term = keyword.strip().casefold()
+    return [item for item in PRODUCTS if term in item["name"].casefold()]</code></pre>
+  <div class="flow">
+    <div class="chip"><b>"  무선 "</b><small>사용자 입력</small></div>
+    <span class="arr">→ strip() →</span>
+    <div class="chip"><b>"무선"</b><small>앞뒤 공백 제거</small></div>
+    <span class="arr">→ casefold() →</span>
+    <div class="chip"><b>"무선"</b><small>대소문자 통일</small></div>
+    <span class="arr">→ in 이름 →</span>
+    <div class="chip key"><b>['무선 키보드', '무선 마우스']</b><small>조건에 맞는 것만</small></div>
+  </div>
+  <p><code>[A for x in 목록 if 조건]</code>은 "조건에 맞는 것만 골라 새 리스트"를 한 줄로 쓰는 방법입니다. <code>casefold()</code>는 <code>lower()</code>보다 더 강하게 대소문자를 통일합니다.</p>
+</section>
+
+<section id="order">
+  <h2>주문 함수: 검사 순서가 핵심<small>shop.py의 order()</small></h2>
+  <p><code>order(product_id, quantity, discount_rate="0")</code>는 아래 검사를 <strong>위에서 아래로</strong> 모두 통과해야만 재고를 깎습니다.</p>
+  <div class="mw">
+    <div class="side">검사 순서 ↓</div>
+    <ol>
+      <li><b>상품 ID 찾기</b><span>없으면 "존재하지 않는 상품이다."</span></li>
+      <li><b>수량이 1 이상 정수?</b><span>아니면 "수량은 1 이상의 정수여야 한다."</span></li>
+      <li><b>재고 충분?</b><span>아니면 "재고가 부족하다."</span></li>
+      <li><b>할인율이 숫자?</b><span>Decimal 변환 실패 → "할인율은 숫자여야 한다."</span></li>
+      <li><b>할인율 0~1 사이?</b><span>아니면 "할인율은 0~1 사이여야 한다."</span></li>
+      <li class="view"><b>재고 차감 + 결과 반환</b><span>stock -= quantity, {"name", "quantity", "total"}</span></li>
+    </ol>
+    <div class="side up">통과 시 실행</div>
+  </div>
+  <div class="note warn"><strong>순서를 바꾸면 생기는 버그:</strong> 재고를 먼저 깎고 할인율을 나중에 검사하면, <code>order(1, 1, "abc")</code>가 오류로 실패했는데 재고는 1개 줄어 있습니다. 테스트 <code>test_invalid_discount_text_preserves_stock</code>이 바로 이 상황을 막습니다.</div>
+  <h3>Decimal로 할인율 계산</h3>
+<pre><code>rate = Decimal(discount_rate)            <span class="c"># "0.10" → 정확한 0.10</span>
+discount = int(Decimal(subtotal) * rate)  <span class="c"># 70000 × 0.10 = 7000</span></code></pre>
+  <p>할인율을 문자열 <code>"0.10"</code>으로 받아 <code>Decimal</code>로 바꾸면 실수 오차 없이 계산됩니다. <code>type(quantity) is not int</code> 검사는 <code>True</code>(불리언도 정수 취급됨)나 <code>2.5</code> 같은 값을 걸러냅니다.</p>
+<div class="out">$ uv run python shop.py
+<b>검색: ['무선 키보드']
+주문: 무선 키보드 2개 / 63,000원
+남은 재고: 3</b></div>
+</section>
+
+<section id="json">
+  <h2>JSON 저장과 예외 처리<small>07_json.py · 08_exceptions.py</small></h2>
+  <div class="grid2">
+    <div>
+      <h4>JSON: 파이썬 데이터를 파일로</h4>
+<pre><code>path = Path(__file__).resolve().parent / "products.json"
+path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+loaded = json.loads(path.read_text(encoding="utf-8"))</code></pre>
+      <p><code>dumps</code>는 객체 → 문자열, <code>loads</code>는 문자열 → 객체. <code>ensure_ascii=False</code>가 없으면 "키보드"가 <code>\ud0a4\ubcf4\ub4dc</code>로 저장됩니다.</p>
+    </div>
+    <div>
+      <h4>예외: 오류가 나도 멈추지 않게</h4>
+<pre><code>for raw in ["3", "abc", "0"]:
+    try:
+        quantity = int(raw)
+        if quantity &lt;= 0:
+            raise ValueError("1 이상의 수량을 입력해야 한다.")
+        print("수량:", quantity)
+    except ValueError as error:
+        print("오류:", error)</code></pre>
+      <p><code>"abc"</code>는 <code>int()</code>가, <code>"0"</code>은 직접 만든 <code>raise</code>가 오류를 냅니다. 둘 다 <code>except</code>에서 잡혀 반복이 계속됩니다.</p>
+    </div>
+  </div>
+  <p><code>products.json</code>은 실행할 때마다 다시 생기는 결과 파일이라 <code>.gitignore</code>로 Git에서 뺐습니다.</p>
+</section>
+
+<section id="test">
+  <h2>pytest 8개<small>tests/conftest.py · tests/test_shop.py</small></h2>
+  <h3>fixture로 재고 원상복구</h3>
+  <div class="seq"><span class="lead">테스트마다</span><span>deepcopy로 PRODUCTS 사진 찍기</span><i>→</i><span>yield: 테스트 실행 (재고 변경)</span><i>→</i><span>PRODUCTS[:] = 사진으로 복구</span></div>
+<pre><code>@pytest.fixture(autouse=True)
+def restore_products():
+    snapshot = deepcopy(PRODUCTS)
+    yield
+    PRODUCTS[:] = snapshot</code></pre>
+  <p><code>autouse=True</code>라서 모든 테스트에 자동으로 붙습니다. <code>PRODUCTS = snapshot</code>이 아니라 <code>PRODUCTS[:] = snapshot</code>인 이유는, 다른 파일이 import해 간 <strong>같은 리스트 객체의 내용</strong>을 바꿔야 하기 때문입니다. <code>=</code>로 새 리스트를 대입하면 다른 파일은 여전히 옛 리스트를 봅니다.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>테스트</th><th>입력</th><th>기대 결과</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_search</code></td><td>search("키보드")</td><td>첫 결과 id 1</td></tr>
+      <tr><td><code>test_order_and_stock</code></td><td>order(1, 2, "0.10")</td><td>total 63000, 재고 3</td></tr>
+      <tr><td><code>test_invalid_quantity</code></td><td>order(1, 0)</td><td>ValueError "수량"</td></tr>
+      <tr><td><code>test_out_of_stock</code></td><td>order(3, 1)</td><td>ValueError "재고"</td></tr>
+      <tr><td><code>test_unknown_product</code></td><td>order(99, 1)</td><td>ValueError "존재"</td></tr>
+      <tr><td><code>test_invalid_discount_rate</code></td><td>order(1, 1, "1.2")</td><td>ValueError "할인율"</td></tr>
+      <tr><td><code>test_invalid_discount_text_preserves_stock</code></td><td>order(1, 1, "abc")</td><td>ValueError "숫자" + 재고 5 그대로</td></tr>
+      <tr><td><code>test_available_products</code></td><td>available_products()</td><td>2개</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="diff">
+  <h2>교재와 다르게 한 곳<small>직접 실행해 보고 고친 부분</small></h2>
+  <div class="oops">
+    <div class="oop"><div class="bad"><span class="lbl">받은 zip</span><code>09_shop.py</code><small>테스트는 <code>from shop import order</code>로 불러옴</small></div><div class="good"><span class="lbl">교재대로</span><code>shop.py</code><small>파일 이름을 교재 단계 12와 맞춤</small></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">교재 pyproject</span><code>pythonpath 설정 없음</code><small>ModuleNotFoundError: No module named 'catalog' (설정을 빼고 직접 재현함)</small></div><div class="good"><span class="lbl">수정</span><code>pythonpath = ["."]</code><small>tests/에서도 루트의 catalog.py를 찾음</small></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">교재 pyproject</span><code>DJANGO_SETTINGS_MODULE = "config.settings"</code><small>2장엔 Django가 없어 "모르는 설정" 경고만 남</small></div><div class="good"><span class="lbl">수정</span><code>해당 줄 제거</code></div></div>
+  </div>
+</section>
+
+<section id="run">
+  <h2>실행 순서<small>교재 2.7</small></h2>
+<pre><code>cd C:\sk-encore\app_workspace\chapter02_project
+uv sync
+uv run python 01_variables.py
+uv run python 02_calculate.py
+uv run python 03_condition.py
+uv run python 04_loop.py
+uv run python 05_functions.py
+uv run python catalog.py
+uv run python 07_json.py
+uv run python 08_exceptions.py
+uv run python shop.py
+uv run pytest -v                     <span class="c"># 8 passed</span>
+uv run python exercises/answers.py</code></pre>
+<div class="out">$ uv run python exercises/answers.py
+<b>과제 1: 122400
+과제 2: ['무선 키보드', '무선 마우스']
+과제 3: ['무선 키보드', '무선 마우스']
+과제 4: 재고가 부족하다.</b></div>
+  <p>모든 출력이 교재와 같은 것을 확인했습니다.</p>
+</section>
+
+<section id="quiz">
+  <h2>확인 문제<small>눌러서 답 보기</small></h2>
+  <details><summary>list와 dict의 차이는?</summary><p>list는 순서가 있는 항목 모음이고(<code>[0]</code>으로 접근), dict는 키와 값의 쌍입니다(<code>["name"]</code>으로 접근).</p></details>
+  <details><summary>할인 금액 계산에서 <code>//</code>를 쓰는 이유는?</summary><p>원 미만 금액을 버리고 정수 금액을 얻기 위해서입니다.</p></details>
+  <details><summary>함수의 return은 무엇을 하나?</summary><p>함수 실행 결과를 호출한 위치로 돌려줍니다.</p></details>
+  <details><summary>JSON 저장 시 <code>ensure_ascii=False</code>의 의미는?</summary><p>한글을 ASCII 이스케이프 형태가 아닌 그대로 기록합니다.</p></details>
+  <details><summary>pytest의 fixture가 필요한 이유는?</summary><p>테스트 간 공유 재고 데이터 변경을 복원해서 실행 순서에 영향을 받지 않게 하려고 씁니다.</p></details>
+  <details><summary>주문 전에 수량과 할인율을 검사하는 이유는?</summary><p>잘못된 주문으로 재고가 차감되는 부작용을 막기 위해서입니다.</p></details>
+</section>
+
+<section id="check">
+  <h2>완료 점검표 <span class="count" id="count"></span><small>체크 상태는 이 브라우저에만 저장됩니다</small></h2>
+  <ul class="checks" id="checks"></ul>
+</section>
+
+<footer>원본: 「제2장. Python 기본 문법과 상품 데이터 처리」 교재 13쪽. 실행 결과는 제 PC(Windows 11, Python 3.12)에서 직접 확인했습니다.</footer>
+</main>
+</div>
+<script>
+window.PAGE = {
+  key: "ch2-checks", start: 9, done: [0, 1, 2, 3, 4, 5],
+  files: [
+    { n: ".python-version", when: "직접 작성", d: "3.12 한 줄. 1장과 같은 파이썬 버전을 이 프로젝트에서도 쓴다는 표지판입니다." },
+    { n: "pyproject.toml", when: "직접 작성", d: "프로젝트 이름(chapter02-products), 파이썬 3.12, 개발용 pytest, pytest 설정(testpaths, pythonpath)이 들어 있습니다. dependencies가 빈 리스트인 건 표준 라이브러리만 쓰기 때문입니다." },
+    { n: ".gitignore", when: "직접 작성", d: "가상환경·캐시·비밀정보에 더해, 07_json.py가 만드는 products.json도 제외합니다." },
+    { n: "01_variables.py", when: "직접 작성", d: "문자열·정수·불리언 변수를 만들고 type(x).__name__으로 자료형 이름을 출력합니다. is_available = stock > 0 처럼 비교 결과가 불리언이 됩니다." },
+    { n: "02_calculate.py", when: "직접 작성", d: "가격 × 수량에서 할인액을 빼서 결제 금액을 구합니다. // 로 원 미만을 버리고 :, 로 쉼표를 찍습니다. 결과: 결제 금액: 63,000원" },
+    { n: "03_condition.py", when: "직접 작성", d: "if / elif / else로 수량 오류 → 재고 부족 → 주문 가능 순서로 분기합니다. 결과: 주문 가능" },
+    { n: "04_loop.py", when: "직접 작성", d: "딕셔너리 두 개를 담은 리스트를 for로 돌면서 재고가 있는 상품만 출력합니다. 결과: 키보드" },
+    { n: "05_functions.py", when: "직접 작성", d: "할인 계산을 calculate_total() 함수로 묶습니다. 기본값 매개변수, 타입 힌트, raise ValueError, if __name__ == \"__main__\" 을 배웁니다. 결과: 63000" },
+    { n: "catalog.py", when: "직접 작성", d: "여러 예제가 같이 쓰는 상품 3개(PRODUCTS)와 search_products(), available_products() 함수입니다. shop.py와 테스트가 이 파일을 import합니다." },
+    { n: "shop.py", when: "직접 작성 (zip에서는 09_shop.py)", d: "검색·주문·할인·재고 차감을 합친 완성 프로그램입니다. 모든 검사를 통과한 뒤에만 재고를 깎고, 할인율은 Decimal로 정확히 계산합니다.", a: "zip에는 09_shop.py로 들어 있었는데, 테스트가 from shop import로 불러오므로 교재대로 shop.py로 바꿨습니다." },
+    { n: "07_json.py", when: "직접 작성", d: "리스트를 JSON 파일로 저장하고 다시 읽습니다. Path(__file__).resolve().parent로 실행 위치와 상관없이 프로젝트 폴더에 저장합니다. 결과: 저장 건수: 1" },
+    { n: "08_exceptions.py", when: "직접 작성", d: "\"3\", \"abc\", \"0\"을 차례로 정수로 바꾸며 try/except로 오류를 잡습니다. 오류가 나도 반복은 계속됩니다." },
+    { n: "products.json", when: "07_json.py 실행 후", gone: true, d: "실행 결과로 생기는 파일입니다. 소스가 아니라서 Git에 올리지 않습니다." },
+    { n: "tests\\", when: "직접 작성", d: "pytest 폴더입니다." },
+    { n: "conftest.py", indent: true, when: "직접 작성", d: "autouse fixture로 테스트마다 PRODUCTS를 복사해 두었다가 끝나면 복구합니다. 직접 실행하지 않고 pytest가 자동으로 불러옵니다." },
+    { n: "test_shop.py", indent: true, when: "직접 작성", d: "검색, 주문, 수량 오류, 품절, 없는 상품, 할인율 범위, 잘못된 할인율 시 재고 보존, 판매 가능 상품까지 8개를 검사합니다." },
+    { n: "exercises\\answers.py", when: "직접 작성", d: "과제 4개 모범 답안입니다. 하위 폴더에서 실행해도 루트의 catalog.py를 찾도록 sys.path.insert로 경로를 추가합니다." }
+  ],
+  checks: [
+    "uv와 Python 3.12 재사용 확인 (다시 설치하지 않음)",
+    "chapter02_project 폴더와 .venv 생성",
+    ".python-version · .gitignore · pyproject.toml 작성",
+    "01~08 예제를 실행해 교재 출력과 비교",
+    "catalog.py · shop.py 실행 (63,000원 / 남은 재고 3)",
+    "uv run pytest -v → 8 passed",
+    "exercises/answers.py 과제 4개 실행",
+    "확인 문제 6개 풀어 보기"
+  ]
+};
+</script>
+
+<script>
+(function () {
+  var P = window.PAGE || {};
+  // 파일 탐색기
+  var tree = document.getElementById("tree"), detail = document.getElementById("detail");
+  if (tree && detail && P.files) {
+    var files = P.files;
+    var show = function (i) {
+      var f = files[i];
+      detail.innerHTML = "<h4></h4><span class='when'></span><p></p>" + (f.a ? "<p class='an'></p>" : "");
+      detail.querySelector("h4").textContent = f.n;
+      detail.querySelector(".when").textContent = "생기는 때: " + f.when;
+      detail.querySelector("p").textContent = f.d;
+      if (f.a) detail.querySelector(".an").textContent = f.a;
+      tree.querySelectorAll("button").forEach(function (b, j) { b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+    };
+    files.forEach(function (f, i) {
+      var li = document.createElement("li"), b = document.createElement("button");
+      b.type = "button"; b.id = "file-" + i; b.textContent = f.n;
+      if (f.indent) b.classList.add("in");
+      if (f.gone) b.classList.add("gone");
+      b.addEventListener("click", function () { show(i); });
+      li.appendChild(b); tree.appendChild(li);
+    });
+    show(P.start || 0);
+  }
+  // 완료 점검표
+  var ul = document.getElementById("checks"), count = document.getElementById("count");
+  if (ul && P.checks) {
+    var KEY = P.key || "checks", saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
+    var update = function () { if (count) count.textContent = ul.querySelectorAll("input:checked").length + " / " + P.checks.length; };
+    P.checks.forEach(function (t, i) {
+      var li = document.createElement("li"), label = document.createElement("label"), cb = document.createElement("input"), span = document.createElement("span");
+      cb.type = "checkbox"; cb.id = "chk-" + i;
+      cb.checked = (i in saved) ? saved[i] : !!(P.done && P.done.indexOf(i) >= 0);
+      span.textContent = t;
+      cb.addEventListener("change", function () {
+        saved[i] = cb.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+        update();
+      });
+      label.appendChild(cb); label.appendChild(span); li.appendChild(label); ul.appendChild(li);
+    });
+    update();
+  }
+})();
+
+</script>

@@ -198,6 +198,24 @@ details p { font-size: .93rem; margin: .3rem 0; }
 .count { font-family: var(--f-code); font-size: .85rem; color: var(--muted); }
 footer { margin-top: 3rem; font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* 2~5장 공통 추가 */
+.chapnav { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1rem; font-size: .8rem; }
+.chapnav a { color: var(--muted); text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: .15rem .6rem; border-radius: 99px; }
+.chapnav a[aria-current="page"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chapnav a:hover, .chapnav a:focus-visible { border-color: var(--accent-2); outline: none; }
+.out { font-family: var(--f-code); font-size: .82rem; background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: .6rem .8rem; white-space: pre-wrap; margin: .5rem 0; }
+.out b { color: var(--ok); font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.grid2 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; min-width: 0; font-size: .92rem; }
+.grid2 h4 { margin: 0 0 .3rem; font-size: .98rem; }
+.grid2 pre { margin: .5rem 0 0; }
+@media (max-width: 600px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 1rem 0; }
+.cols3 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; text-align: center; font-size: .88rem; }
+.cols3 .bar { display: grid; gap: 4px; margin: .6rem auto 0; max-width: 9rem; }
+.cols3 .bar i { display: block; height: 22px; border-radius: 4px; background: var(--tint); border: 1px solid var(--accent-2); }
+@media (max-width: 520px) { .cols3 { grid-template-columns: minmax(0, 1fr); } }
+
 </style>
 
 <div class="wrap">
@@ -224,6 +242,7 @@ footer { margin-top: 3rem; font-size: .82rem; color: var(--muted); border-top: 1
   <p class="eyebrow">PART 1 · 제1장 풀이</p>
   <h1>Python 3.12 · uv · VS Code · Django <span class="v">5.2.7</span></h1>
   <p class="lede">교재 33쪽을 그림과 쉬운 말로 다시 정리했습니다. 각 명령이 무엇을 만들고, 만들어진 파일이 무슨 일을 하는지 한 줄씩 짚어 봅니다.</p>
+  <div class="chapnav"><a href="chapter01-풀이노트.html" aria-current="page">1장</a><a href="chapter02-풀이노트.html">2장</a><a href="chapter03-풀이노트.html">3장</a><a href="chapter04-풀이노트.html">4장</a><a href="chapter05-풀이노트.html">5장</a></div>
 </header>
 
 <!-- 1 -->

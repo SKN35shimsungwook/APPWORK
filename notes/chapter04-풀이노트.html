@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>4장 상품 웹 화면 풀이 노트</title>
+<style>
+/* 레이아웃: 왼쪽 고정 목차 + 오른쪽 본문(약 46rem). 폰 폭에서는 목차가 위로 올라감 */
+:root {
+  --bg: #f4f7f5; --surface: #ffffff; --tint: #e7efea; --fg: #16231c; --muted: #5a6a61; --line: #d5dfd9;
+  --accent: #0c4b33; --on-accent: #ffffff; --accent-2: #2f9e6f;
+  --code-bg: #10201a; --code-fg: #d6eee1; --code-dim: #7fa592;
+  --warn: #a64a12; --warn-bg: #fbece1; --ok: #1d7249; --ok-bg: #e0f2e8; --next: #8a5a00; --next-bg: #fff2cf;
+  --f-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", Consolas, "D2Coding", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1512; --surface: #16201b; --tint: #1b2922; --fg: #e2ebe5; --muted: #98a99f; --line: #2a3830;
+  --accent: #6fd3a5; --on-accent: #0b1a13; --accent-2: #4fc08d;
+  --code-bg: #08100c; --code-fg: #cfe8da; --code-dim: #6f9482;
+  --warn: #f2a46c; --warn-bg: #36220f; --ok: #82d9aa; --ok-bg: #15301f; --next: #f3c654; --next-bg: #3a2e0c;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1512; --surface: #16201b; --tint: #1b2922; --fg: #e2ebe5; --muted: #98a99f; --line: #2a3830;
+  --accent: #6fd3a5; --on-accent: #0b1a13; --accent-2: #4fc08d;
+  --code-bg: #08100c; --code-fg: #cfe8da; --code-dim: #6f9482;
+  --warn: #f2a46c; --warn-bg: #36220f; --ok: #82d9aa; --ok-bg: #15301f; --next: #f3c654; --next-bg: #3a2e0c;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.75; padding-inline: 16px; padding-block: 0 4rem; }
+.wrap { max-width: 72rem; margin: 0 auto; display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 3rem; }
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; padding-top: 2.5rem; font-size: .88rem; }
+nav.toc p { font-size: .72rem; letter-spacing: .08em; color: var(--muted); margin: 0 0 .5rem; font-weight: 700; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; counter-reset: t; }
+nav.toc a { color: var(--muted); text-decoration: none; display: block; padding: .2rem .5rem; border-radius: 6px; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); background: var(--tint); outline: none; }
+main { min-width: 0; max-width: 48rem; }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0,1fr); gap: 0; }
+  nav.toc { position: static; padding-top: 1.5rem; }
+  nav.toc ol { display: flex; flex-wrap: wrap; gap: .3rem; }
+  nav.toc a { border: 1px solid var(--line); background: var(--surface); }
+}
+
+header.hero { padding-block: 2.5rem 1.5rem; border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: .75rem; letter-spacing: .1em; color: var(--accent); font-weight: 700; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); line-height: 1.25; margin: .4rem 0 .8rem; text-wrap: balance; letter-spacing: -.01em; }
+h1 .v { font-family: var(--f-code); font-weight: 600; font-size: .62em; color: var(--accent); vertical-align: middle; }
+.lede { color: var(--muted); max-width: 40rem; margin: 0; }
+section { padding-block: 2.6rem 0.5rem; scroll-margin-top: 1rem; }
+h2 { font-size: 1.5rem; line-height: 1.35; margin: 0 0 .3rem; text-wrap: balance; }
+h2 small { display: block; font-size: .78rem; font-weight: 500; color: var(--muted); letter-spacing: .02em; }
+h3 { font-size: 1.1rem; margin: 2rem 0 .4rem; }
+p { margin: .6rem 0; max-width: 42rem; }
+code { font-family: var(--f-code); font-size: .86em; background: var(--tint); padding: .08em .35em; border-radius: 4px; }
+pre { font-family: var(--f-code); font-size: .84rem; line-height: 1.65; background: var(--code-bg); color: var(--code-fg); padding: 1rem 1.1rem; border-radius: 10px; overflow-x: auto; margin: .8rem 0; }
+pre code { background: none; padding: 0; font-size: 1em; }
+pre .c { color: var(--code-dim); }
+pre .k { color: #8fe0b6; font-weight: 600; }
+strong { font-weight: 700; }
+.note { border-left: 3px solid var(--accent-2); background: var(--surface); padding: .7rem 1rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: .95rem; }
+.note.warn { border-color: var(--warn); background: var(--warn-bg); }
+.scroll { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 30rem; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; color: var(--muted); letter-spacing: .04em; font-weight: 700; background: var(--tint); }
+td code { white-space: nowrap; }
+
+/* 1. 도구 층 */
+.layers { display: grid; gap: 0; margin: 1.2rem 0; }
+.layer { border: 1px solid var(--line); background: var(--surface); padding: .8rem 1rem; display: grid; grid-template-columns: 9.5rem minmax(0,1fr); gap: 1rem; align-items: center; }
+.layer + .layer { border-top: 0; }
+.layer:first-child { border-radius: 10px 10px 0 0; }
+.layer:last-child { border-radius: 0 0 10px 10px; }
+.layer b { font-family: var(--f-code); font-size: .95rem; color: var(--accent); }
+.layer span { font-size: .92rem; }
+.layer em { font-style: normal; color: var(--muted); font-size: .82rem; display: block; }
+.layer.top { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.layer.top b, .layer.top em { color: var(--on-accent); }
+@media (max-width: 520px) { .layer { grid-template-columns: minmax(0,1fr); gap: .2rem; } }
+
+/* 2. 진행 지도 */
+.journey { list-style: none; padding: 0; margin: 1.2rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: .6rem; counter-reset: s; }
+.journey li { counter-increment: s; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem .85rem; font-size: .9rem; line-height: 1.5; display: grid; gap: .25rem; }
+.journey li::before { content: counter(s); font-family: var(--f-code); font-size: .75rem; color: var(--muted); }
+.journey li b { font-size: .95rem; }
+.journey li code { font-size: .78rem; justify-self: start; }
+.pill { justify-self: start; font-size: .72rem; font-weight: 700; padding: .05rem .5rem; border-radius: 99px; }
+.pill.done { background: var(--ok-bg); color: var(--ok); }
+.pill.next { background: var(--next-bg); color: var(--next); }
+.pill.todo { background: var(--tint); color: var(--muted); }
+.journey li.is-next { border: 2px solid var(--next); }
+
+/* 다이어그램 공통 */
+figure { margin: 1.2rem 0; }
+figcaption { font-size: .82rem; color: var(--muted); margin-top: .4rem; }
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+svg .box.hl { fill: var(--tint); stroke: var(--accent-2); }
+svg .box.db { fill: var(--tint); stroke: var(--accent); }
+svg .t { fill: var(--fg); font-family: var(--f-code); font-size: 15px; font-weight: 600; }
+svg .s { fill: var(--muted); font-family: var(--f-body); font-size: 12.5px; }
+svg .ar { stroke: var(--accent-2); stroke-width: 2; fill: none; }
+svg .ar.back { stroke-dasharray: 5 4; }
+svg .num { fill: var(--accent); }
+svg .numt { fill: var(--on-accent); font-family: var(--f-code); font-size: 12px; font-weight: 600; }
+svg .head { fill: var(--accent-2); }
+
+/* 갈림길 */
+.paths { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .8rem; margin: 1rem 0; }
+.path { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; font-size: .92rem; min-width: 0; }
+.path h4 { margin: 0 0 .3rem; font-size: 1rem; }
+.path ol { margin: .4rem 0 0; padding-left: 1.2rem; }
+.path.mine { border: 2px solid var(--accent-2); }
+@media (max-width: 600px) { .paths { grid-template-columns: minmax(0,1fr); } }
+
+/* 실수 카드 */
+.oops { display: grid; gap: .6rem; margin: 1rem 0; }
+.oop { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: .88rem; }
+.oop div { padding: .6rem .8rem; min-width: 0; }
+.oop .bad { background: var(--warn-bg); }
+.oop .good { background: var(--ok-bg); }
+.oop code { background: none; padding: 0; word-break: break-all; }
+.oop small { display: block; color: var(--muted); font-size: .78rem; margin-top: .2rem; }
+.oop .lbl { font-size: .7rem; font-weight: 700; letter-spacing: .06em; display: block; }
+.oop .bad .lbl { color: var(--warn); }
+.oop .good .lbl { color: var(--ok); }
+@media (max-width: 560px) { .oop { grid-template-columns: minmax(0,1fr); } }
+
+/* 파일 탐색기 */
+.explorer { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0,1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); margin: 1.2rem 0; }
+.tree { list-style: none; margin: 0; padding: .6rem; border-right: 1px solid var(--line); background: var(--tint); font-family: var(--f-code); font-size: .84rem; }
+.tree button { all: unset; cursor: pointer; display: block; width: 100%; box-sizing: border-box; padding: .25rem .5rem; border-radius: 6px; color: var(--fg); }
+.tree button:hover { background: var(--surface); }
+.tree button:focus-visible { outline: 2px solid var(--accent-2); }
+.tree button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.tree .in { padding-left: 1.2rem; }
+.tree .gone { text-decoration: line-through; opacity: .6; }
+.detail { padding: 1rem 1.2rem; min-width: 0; }
+.detail h4 { font-family: var(--f-code); margin: 0; font-size: 1.05rem; color: var(--accent); }
+.detail .when { display: inline-block; font-size: .74rem; font-weight: 700; background: var(--tint); color: var(--muted); padding: .05rem .55rem; border-radius: 99px; margin: .35rem 0 .3rem; }
+.detail p { font-size: .93rem; }
+.detail .an { font-size: .88rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: .5rem; margin-top: .6rem; }
+@media (max-width: 620px) { .explorer { grid-template-columns: minmax(0,1fr); } .tree { border-right: 0; border-bottom: 1px solid var(--line); } }
+
+/* BASE_DIR 트리 */
+.pathtree { font-family: var(--f-code); font-size: .88rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; line-height: 2; overflow-x: auto; white-space: nowrap; }
+.pathtree .tag { font-size: .74rem; font-weight: 600; padding: .05rem .5rem; border-radius: 99px; margin-left: .6rem; font-family: var(--f-body); }
+.tag.a { background: var(--accent); color: var(--on-accent); }
+.tag.b { background: var(--tint); color: var(--accent); border: 1px solid var(--accent-2); }
+.tag.c { background: var(--next-bg); color: var(--next); }
+.pathtree .dim { color: var(--muted); }
+
+/* .env 흐름 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 1rem 0; font-size: .86rem; }
+.flow .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .7rem; line-height: 1.4; }
+.flow .chip b { font-family: var(--f-code); display: block; font-size: .85rem; }
+.flow .chip small { color: var(--muted); }
+.flow .chip.key { border-color: var(--accent-2); background: var(--tint); }
+.flow .chip.lock { border-color: var(--warn); background: var(--warn-bg); }
+.flow .arr { color: var(--accent-2); font-weight: 700; }
+
+/* 미들웨어 */
+.mw { display: grid; grid-template-columns: 2.4rem minmax(0,1fr) 2.4rem; gap: 0 .6rem; margin: 1.2rem 0; }
+.mw .side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; font-size: .75rem; font-weight: 700; color: var(--accent-2); writing-mode: vertical-rl; letter-spacing: .1em; border-radius: 99px; background: var(--tint); padding: .8rem 0; }
+.mw .side.up { color: var(--accent); }
+.mw ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; counter-reset: m; }
+.mw li { counter-increment: m; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .7rem; display: grid; grid-template-columns: 1.4rem minmax(0, 13.5rem) minmax(0,1fr); gap: .5rem; font-size: .84rem; align-items: baseline; }
+.mw li::before { content: counter(m); font-family: var(--f-code); color: var(--muted); font-size: .75rem; }
+.mw li b { font-family: var(--f-code); font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
+.mw li span { color: var(--muted); }
+.mw li.view { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.mw li.view::before { content: ""; }
+.mw li.view span { color: var(--on-accent); }
+@media (max-width: 560px) { .mw li { grid-template-columns: 1.2rem minmax(0,1fr); } .mw li span { grid-column: 2; } }
+
+/* 앱 순서 */
+.seq { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .6rem 0 1rem; font-size: .84rem; }
+.seq span { background: var(--surface); border: 1px solid var(--line); padding: .3rem .6rem; border-radius: 6px; }
+.seq i { font-style: normal; color: var(--accent-2); }
+.seq .lead { background: none; border: 0; font-weight: 700; padding-left: 0; }
+
+/* 퀴즈, 체크리스트 */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem 1rem; margin: .5rem 0; }
+details summary { cursor: pointer; font-weight: 500; }
+details summary::marker { color: var(--accent-2); }
+details[open] summary { margin-bottom: .4rem; color: var(--accent); }
+details p { font-size: .93rem; margin: .3rem 0; }
+.checks { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .35rem; }
+.checks label { display: flex; gap: .6rem; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; cursor: pointer; font-size: .93rem; }
+.checks input { accent-color: var(--accent-2); margin-top: .35rem; width: 1rem; height: 1rem; flex: none; }
+.checks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.checks input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.count { font-family: var(--f-code); font-size: .85rem; color: var(--muted); }
+footer { margin-top: 3rem; font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* 2~5장 공통 추가 */
+.chapnav { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1rem; font-size: .8rem; }
+.chapnav a { color: var(--muted); text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: .15rem .6rem; border-radius: 99px; }
+.chapnav a[aria-current="page"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chapnav a:hover, .chapnav a:focus-visible { border-color: var(--accent-2); outline: none; }
+.out { font-family: var(--f-code); font-size: .82rem; background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: .6rem .8rem; white-space: pre-wrap; margin: .5rem 0; }
+.out b { color: var(--ok); font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.grid2 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; min-width: 0; font-size: .92rem; }
+.grid2 h4 { margin: 0 0 .3rem; font-size: .98rem; }
+.grid2 pre { margin: .5rem 0 0; }
+@media (max-width: 600px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 1rem 0; }
+.cols3 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; text-align: center; font-size: .88rem; }
+.cols3 .bar { display: grid; gap: 4px; margin: .6rem auto 0; max-width: 9rem; }
+.cols3 .bar i { display: block; height: 22px; border-radius: 4px; background: var(--tint); border: 1px solid var(--accent-2); }
+@media (max-width: 520px) { .cols3 { grid-template-columns: minmax(0, 1fr); } }
+
+</style>
+<div class="wrap">
+<nav class="toc" aria-label="목차">
+  <p>목차</p>
+  <ol>
+    <li><a href="#big">세 파일의 역할</a></li>
+    <li><a href="#demo">직접 해 보기</a></li>
+    <li><a href="#files">파일 탐색기</a></li>
+    <li><a href="#html">HTML</a></li>
+    <li><a href="#css">CSS 반응형</a></li>
+    <li><a href="#js">JavaScript 흐름</a></li>
+    <li><a href="#safe">textContent</a></li>
+    <li><a href="#test">pytest 6개</a></li>
+    <li><a href="#browser">브라우저 확인</a></li>
+    <li><a href="#tasks">실습 과제</a></li>
+    <li><a href="#quiz">확인 문제</a></li>
+    <li><a href="#check">완료 점검표</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <p class="eyebrow">PART 1 · 제4장 풀이</p>
+  <h1>HTML·CSS·JavaScript 상품 웹 화면</h1>
+  <p class="lede">지금까지는 콘솔에 글자로만 출력했다면, 이번 장은 브라우저 화면을 만듭니다. 파이썬 서버 없이 세 파일로 상품 카탈로그와 장바구니를 만듭니다.</p>
+  <div class="chapnav"><a href="chapter01-풀이노트.html">1장</a><a href="chapter02-풀이노트.html">2장</a><a href="chapter03-풀이노트.html">3장</a><a href="chapter04-풀이노트.html" aria-current="page">4장</a><a href="chapter05-풀이노트.html">5장</a></div>
+</header>
+
+<section id="big">
+  <h2>세 파일의 역할<small>뼈대 · 옷 · 근육</small></h2>
+  <div class="layers">
+    <div class="layer top"><b>assets/app.js</b><span>근육 · 어떻게 움직이나<em>검색하면 카드 다시 그리기, 담기·삭제·합계</em></span></div>
+    <div class="layer"><b>assets/style.css</b><span>옷 · 어떻게 보이나<em>색, 카드 모양, 3열 → 2열 → 1열 반응형</em></span></div>
+    <div class="layer"><b>index.html</b><span>뼈대 · 무엇이 있나<em>제목, 검색창, 상품 목록 자리, 장바구니 자리</em></span></div>
+  </div>
+  <div class="note"><strong>3장과의 관계:</strong> 3장은 파이썬이 JSON 파일로 상품을 다뤘고, 4장은 JavaScript가 브라우저 메모리의 배열로 다룹니다. 3장 코드를 복사하지 않는 독립 프로젝트입니다. 5장에서 이 화면을 Django 템플릿으로 옮깁니다.</div>
+</section>
+
+<section id="demo">
+  <h2>직접 해 보기<small>실제 app.js와 같은 방식으로 동작하는 축소판</small></h2>
+  <div class="grid2">
+    <div>
+      <h4>상품 목록</h4>
+      <label for="d-search" style="font-size:.85rem;color:var(--muted)">상품 검색</label>
+      <input id="d-search" type="search" placeholder="예: 키보드" autocomplete="off" style="width:100%;padding:.5rem .7rem;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--fg);font:inherit;margin:.3rem 0 .6rem">
+      <ul id="d-list" style="list-style:none;padding:0;margin:0;display:grid;gap:.35rem"></ul>
+    </div>
+    <div>
+      <h4>장바구니 <button id="d-clear" type="button" style="float:right;font:inherit;font-size:.78rem;border:1px solid var(--line);background:var(--tint);color:var(--fg);border-radius:6px;padding:.1rem .5rem;cursor:pointer">전체 비우기</button></h4>
+      <ul id="d-cart" aria-live="polite" style="padding-left:1.1rem;margin:.4rem 0;font-size:.88rem"></ul>
+      <p id="d-total" style="font-weight:700;text-align:right;margin:0">총액: 0원</p>
+      <p style="font-size:.78rem;color:var(--muted);margin:.6rem 0 0">cart Map 상태: <code id="d-map">Map(0) {}</code></p>
+    </div>
+  </div>
+</section>
+
+<section id="files">
+  <h2>파일 탐색기<small>파일 이름을 누르면 설명이 나옵니다</small></h2>
+  <div class="explorer">
+    <ul class="tree" id="tree"></ul>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="html">
+  <h2>HTML: id가 JavaScript와의 연결 고리<small>index.html</small></h2>
+<pre><code>&lt;link rel="stylesheet" href="assets/style.css"&gt;
+&lt;script src="assets/app.js" <span class="k">defer</span>&gt;&lt;/script&gt;
+...
+&lt;label for="search"&gt;상품 검색&lt;/label&gt;
+&lt;input <span class="k">id="search"</span> type="search" placeholder="상품명을 입력하세요"&gt;
+&lt;section <span class="k">id="product-list"</span> class="product-grid" aria-live="polite"&gt;&lt;/section&gt;   <span class="c">← 처음엔 비어 있음</span>
+&lt;ul <span class="k">id="cart-items"</span> aria-live="polite"&gt;&lt;/ul&gt;
+&lt;p <span class="k">id="cart-total"</span>&gt;총액: 0원&lt;/p&gt;
+&lt;button <span class="k">id="clear-cart"</span>&gt;전체 비우기&lt;/button&gt;</code></pre>
+  <div class="scroll"><table>
+    <thead><tr><th>요소</th><th>뜻</th></tr></thead>
+    <tbody>
+      <tr><td><code>id="..."</code></td><td>JavaScript가 <code>document.querySelector("#search")</code>로 찾아오는 이름표</td></tr>
+      <tr><td><code>defer</code></td><td>HTML을 다 읽은 다음 스크립트 실행. 없으면 아직 없는 <code>#search</code>를 찾다가 null 오류</td></tr>
+      <tr><td><code>&lt;label for="search"&gt;</code></td><td>입력란 이름을 화면 낭독기에 알리고, 글자를 누르면 입력란으로 이동</td></tr>
+      <tr><td><code>aria-live="polite"</code></td><td>내용이 바뀌면 낭독기가 읽어 줌 (검색 결과·장바구니)</td></tr>
+      <tr><td><code>lang="ko"</code></td><td>한국어 문서라고 브라우저·낭독기에 알림</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="css">
+  <h2>CSS 반응형 그리드<small>assets/style.css</small></h2>
+<pre><code>.product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 760px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .product-grid { grid-template-columns: 1fr; } }</code></pre>
+  <div class="cols3">
+    <div><b>PC</b><br><small>760px 초과 · 3열</small><div class="bar" style="grid-template-columns:repeat(3,1fr)"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div><b>태블릿</b><br><small>520~760px · 2열</small><div class="bar" style="grid-template-columns:repeat(2,1fr)"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div><b>휴대폰</b><br><small>520px 이하 · 1열</small><div class="bar"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+  </div>
+  <p><code>1fr</code>은 "남은 공간을 1만큼"이라 <code>repeat(3, 1fr)</code>은 같은 폭 3칸입니다. <code>minmax(0, 1fr)</code>는 긴 상품명이 칸을 밀어내지 않게 최소 폭을 0으로 둡니다. <code>@media</code>는 "화면이 이 폭 이하일 때만" 적용되는 규칙입니다.</p>
+</section>
+
+<section id="js">
+  <h2>JavaScript: 상태를 바꾸고 화면을 다시 그린다<small>assets/app.js</small></h2>
+  <div class="mw">
+    <div class="side">사용자 행동</div>
+    <ol>
+      <li><b>검색창 입력</b><span>input 이벤트 → renderProducts(키워드) → 걸러진 카드만 다시 그림</span></li>
+      <li><b>장바구니 담기 클릭</b><span>addToCart(id) → cart.set(id, 수량+1) → renderCart()</span></li>
+      <li><b>삭제 클릭</b><span>removeFromCart(id) → cart.delete(id) → renderCart()</span></li>
+      <li><b>전체 비우기</b><span>cart.clear() → renderCart()</span></li>
+      <li class="view"><b>renderCart()</b><span>목록을 비우고 cart를 처음부터 돌며 줄·합계를 새로 그림</span></li>
+    </ol>
+    <div class="side up">화면 갱신</div>
+  </div>
+  <p>핵심은 <strong>"데이터(cart)를 바꾸고 → 화면을 통째로 다시 그린다"</strong>입니다. 화면을 조금씩 고치는 대신 매번 새로 그리면 데이터와 화면이 어긋날 일이 없습니다. React 같은 도구도 같은 원리입니다.</p>
+<pre><code>const cart = new Map();                               <span class="c">// 상품ID → 수량</span>
+function addToCart(productId) {
+  cart.set(productId, (cart.get(productId) || 0) + 1);  <span class="c">// 없으면 0으로 치고 +1</span>
+  renderCart();
+}
+const formatPrice = (price) =&gt; `${price.toLocaleString("ko-KR")}원`;   <span class="c">// 79000 → "79,000원"</span></code></pre>
+  <div class="grid2">
+    <div><h4>왜 Map인가</h4><p>상품 ID를 키로 수량을 저장하고 고치기 쉽습니다. <code>set / get / delete / clear / size</code>가 바로 있습니다.</p></div>
+    <div><h4>새로고침하면?</h4><p>장바구니가 비워집니다. Map은 브라우저 메모리에만 있고, localStorage 저장은 아직 만들지 않았기 때문입니다.</p></div>
+  </div>
+</section>
+
+<section id="safe">
+  <h2>textContent vs innerHTML<small>보안 원칙</small></h2>
+  <div class="oops">
+    <div class="oop"><div class="bad"><span class="lbl">위험</span><code>el.innerHTML = product.name;</code><small>상품명에 &lt;script&gt;나 &lt;img onerror&gt;가 들어 있으면 그대로 실행됨 (XSS 공격)</small></div><div class="good"><span class="lbl">안전</span><code>el.textContent = product.name;</code><small>무엇이 들어 있든 글자로만 보여 줌</small></div></div>
+  </div>
+  <p>app.js는 <code>createElement</code>로 요소를 만들고 <code>textContent</code>로 글자를 넣습니다. 테스트 <code>test_no_unsafe_inner_html</code>이 app.js에 <code>innerHTML</code>이라는 글자가 없는지 검사합니다. 5장의 Django 템플릿 <code>{{ 값 }}</code>도 같은 이유로 자동 이스케이프됩니다.</p>
+</section>
+
+<section id="test">
+  <h2>pytest 6개<small>tests/test_project.py</small></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>테스트</th><th>확인 내용</th></tr></thead>
+    <tbody>
+      <tr><td><code>test_required_files_exist</code></td><td>index.html, style.css, app.js, pyproject.toml이 있다</td></tr>
+      <tr><td><code>test_html_links_assets</code></td><td>HTML이 CSS·JS 경로를 연결하고 lang="ko"</td></tr>
+      <tr><td><code>test_html_contains_ui_elements</code></td><td>search, product-list, cart-items, cart-total, clear-cart id가 있다</td></tr>
+      <tr><td><code>test_js_has_product_and_cart_functions</code></td><td>renderProducts, addToCart, removeFromCart, renderCart 함수가 있다</td></tr>
+      <tr><td><code>test_css_has_responsive_rules</code></td><td>@media와 grid-template-columns가 있다</td></tr>
+      <tr><td><code>test_no_unsafe_inner_html</code></td><td>app.js에 innerHTML이 없다</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><strong>pytest는 파일 내용만 읽습니다.</strong> 실제로 버튼을 눌렀을 때 동작하는지는 검사하지 못하므로, 아래처럼 브라우저에서 따로 확인해야 합니다.</div>
+</section>
+
+<section id="browser">
+  <h2>브라우저 확인<small>교재 7-2 절차를 제 PC에서 실행</small></h2>
+<pre><code>uv run python -m http.server 8000     <span class="c"># http://localhost:8000, 종료는 Ctrl+C</span></code></pre>
+  <div class="scroll"><table>
+    <thead><tr><th>순서</th><th>동작</th><th>결과</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>처음 열기</td><td>상품 카드 6개</td></tr>
+      <tr><td>2</td><td>"키보드" 검색</td><td>기계식 키보드 1개만 남음</td></tr>
+      <tr><td>3</td><td>기계식 키보드 2번 + 웹캠 1번 담기</td><td>기계식 키보드 × 2 — 158,000원 / 웹캠 × 1 — 49,000원 / 총액 207,000원</td></tr>
+      <tr><td>4</td><td>첫 항목 삭제</td><td>총액 49,000원</td></tr>
+      <tr><td>5</td><td>전체 비우기</td><td>"장바구니가 비어 있습니다." / 총액 0원</td></tr>
+      <tr><td>6</td><td>폭 375px (휴대폰)</td><td>카드 1열</td></tr>
+    </tbody>
+  </table></div>
+  <div class="oops">
+    <div class="oop"><div class="bad"><span class="lbl">받은 zip</span><code>pyproject.toml에 dev 의존성 없음</code><small>교재 단계 03의 uv add --dev 결과가 빠져 있음</small></div><div class="good"><span class="lbl">교재대로</span><code>uv add --dev "pytest&gt;=8,&lt;10"</code></div></div>
+  </div>
+</section>
+
+<section id="tasks">
+  <h2>실습 과제<small>exercises/answers.md</small></h2>
+  <div class="grid2">
+    <div><h4>1. 상품 추가</h4><pre><code>{ id: 7, name: "모니터 받침대", price: 32000, icon: "🖥️" }</code></pre></div>
+    <div><h4>2. 가격순 정렬</h4><pre><code>filtered.sort((a, b) =&gt; a.price - b.price);</code></pre><p>뺄셈 결과가 음수면 a가 앞, 양수면 b가 앞입니다.</p></div>
+    <div><h4>3. 수량 1개 감소</h4><pre><code>function decreaseQuantity(productId) {
+  const quantity = cart.get(productId) || 0;
+  if (quantity &lt;= 1) cart.delete(productId);
+  else cart.set(productId, quantity - 1);
+  renderCart();
+}</code></pre></div>
+    <div><h4>4. 접근성</h4><p><code>&lt;label for="search"&gt;</code>는 입력란의 의미를 전달하고 클릭으로 포커스를 옮깁니다. <code>aria-live</code>는 바뀐 검색 결과와 장바구니 내용을 보조기술에 알립니다.</p></div>
+  </div>
+</section>
+
+<section id="quiz">
+  <h2>확인 문제<small>눌러서 답 보기</small></h2>
+  <details><summary>HTML, CSS, JavaScript의 역할은?</summary><p>HTML은 구조, CSS는 디자인, JavaScript는 동작과 상태를 담당합니다.</p></details>
+  <details><summary><code>defer</code>의 역할은?</summary><p>HTML 파싱을 막지 않고 스크립트를 내려받아, 문서 파싱이 끝난 뒤 실행합니다.</p></details>
+  <details><summary>Map을 쓰는 이유는?</summary><p>상품 ID를 키로 수량을 저장하고 갱신하기 쉽기 때문입니다.</p></details>
+  <details><summary>textContent를 쓰는 이유는?</summary><p>문자열을 HTML로 해석하지 않고 텍스트로 출력하기 때문입니다.</p></details>
+  <details><summary>pytest만으로 브라우저 기능을 검증할 수 있나?</summary><p>아닙니다. 이 장의 pytest는 정적 구성을 확인하고, 클릭 동작은 브라우저에서 확인해야 합니다.</p></details>
+</section>
+
+<section id="check">
+  <h2>완료 점검표 <span class="count" id="count"></span><small>체크 상태는 이 브라우저에만 저장됩니다</small></h2>
+  <ul class="checks" id="checks"></ul>
+</section>
+
+<footer>원본: 「제4장. HTML·CSS·JavaScript 상품 웹 화면」 교재 10쪽과 chapter04_project.zip. 브라우저 확인 결과는 제 PC에서 직접 눌러 본 것입니다.</footer>
+</main>
+</div>
+<script>
+window.PAGE = {
+  key: "ch4-checks", start: 3, done: [0, 1, 2, 3, 4],
+  files: [
+    { n: "index.html", when: "직접 작성", d: "화면 뼈대입니다. 헤더, 검색 입력란, 비어 있는 상품 목록 영역, 장바구니 영역을 선언하고 style.css와 app.js(defer)를 연결합니다." },
+    { n: "assets\\", when: "직접 작성", d: "화면에 쓰이는 CSS와 JS를 모아 두는 폴더입니다." },
+    { n: "style.css", indent: true, when: "직접 작성", d: "기본 글꼴·색, 파란 헤더, 흰 카드에 그림자, 버튼 hover·focus 표시, 760px·520px 기준 반응형 규칙이 들어 있습니다." },
+    { n: "app.js", indent: true, when: "직접 작성", d: "상품 6개 배열(PRODUCTS), 장바구니 Map, renderProducts·addToCart·removeFromCart·renderCart 함수, 검색 input 이벤트와 전체 비우기 이벤트입니다. 맨 아래에서 처음 화면을 그립니다." },
+    { n: "tests\\test_project.py", when: "직접 작성", d: "파일 존재, HTML↔CSS·JS 연결, 필수 id, 필수 함수, 반응형 규칙, innerHTML 미사용 — 6개를 파일 내용으로 검사합니다." },
+    { n: "exercises\\answers.md", when: "직접 작성", d: "과제 4개 모범 답안: 상품 추가, 가격순 정렬, 수량 1개 감소, 접근성 설명." },
+    { n: "pyproject.toml", when: "uv init 후 수정 + uv add --dev", d: "chapter04-web. 파이썬은 테스트(pytest)용으로만 씁니다. 화면 자체는 파이썬 없이 동작합니다.", a: "zip에는 dev 의존성이 빠져 있어서 교재대로 uv add --dev \"pytest>=8,<10\"을 실행했습니다." },
+    { n: "main.py", when: "uv init", gone: true, d: "uv init이 만드는 기본 파일인데 정적 웹 프로젝트라 쓰지 않으므로 지웁니다." }
+  ],
+  checks: [
+    "chapter04_project 폴더와 .venv 생성",
+    "uv add --dev pytest 후 uv run pytest -v → 6 passed",
+    "uv run python -m http.server 8000 으로 화면 열기",
+    "검색 → 담기 → 총액 → 삭제 → 전체 비우기 확인",
+    "휴대폰 폭에서 카드 1열 확인",
+    "과제: 상품 추가 · 가격순 정렬 직접 해 보기",
+    "과제: decreaseQuantity() 추가해 보기"
+  ]
+};
+// 축소판 데모: 실제 app.js처럼 Map 상태를 바꾸고 화면을 다시 그린다.
+(function () {
+  var PRODUCTS = [
+    { id: 1, name: "무선 마우스", price: 19000 }, { id: 2, name: "기계식 키보드", price: 79000 },
+    { id: 3, name: "USB-C 허브", price: 35000 }, { id: 4, name: "노트북 거치대", price: 28000 },
+    { id: 5, name: "웹캠", price: 49000 }, { id: 6, name: "헤드셋", price: 59000 }
+  ];
+  var cart = new Map();
+  var list = document.getElementById("d-list"), cartEl = document.getElementById("d-cart");
+  var totalEl = document.getElementById("d-total"), mapEl = document.getElementById("d-map");
+  var fmt = function (p) { return p.toLocaleString("ko-KR") + "원"; };
+  function renderProducts(keyword) {
+    list.replaceChildren();
+    var f = PRODUCTS.filter(function (p) { return p.name.toLowerCase().includes((keyword || "").trim().toLowerCase()); });
+    if (!f.length) { var e = document.createElement("li"); e.textContent = "검색 결과가 없습니다."; e.style.color = "var(--muted)"; list.append(e); return; }
+    f.forEach(function (p) {
+      var li = document.createElement("li");
+      li.style.cssText = "display:flex;justify-content:space-between;align-items:center;gap:.5rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.35rem .6rem;font-size:.88rem";
+      var t = document.createElement("span"); t.textContent = p.name + " · " + fmt(p.price);
+      var b = document.createElement("button"); b.type = "button"; b.textContent = "담기";
+      b.style.cssText = "font:inherit;font-size:.78rem;border:0;border-radius:6px;padding:.2rem .6rem;background:var(--accent);color:var(--on-accent);cursor:pointer";
+      b.addEventListener("click", function () { cart.set(p.id, (cart.get(p.id) || 0) + 1); renderCart(); });
+      li.append(t, b); list.append(li);
+    });
+  }
+  function renderCart() {
+    cartEl.replaceChildren(); var total = 0;
+    if (cart.size === 0) { var e = document.createElement("li"); e.textContent = "장바구니가 비어 있습니다."; cartEl.append(e); }
+    cart.forEach(function (q, id) {
+      var p = PRODUCTS.find(function (x) { return x.id === id; }); var sub = p.price * q; total += sub;
+      var li = document.createElement("li"); li.append(document.createTextNode(p.name + " × " + q + " — " + fmt(sub) + " "));
+      var r = document.createElement("button"); r.type = "button"; r.textContent = "삭제";
+      r.style.cssText = "font:inherit;font-size:.72rem;border:0;border-radius:5px;padding:.05rem .45rem;background:var(--warn-bg);color:var(--warn);cursor:pointer";
+      r.addEventListener("click", function () { cart.delete(id); renderCart(); });
+      li.append(r); cartEl.append(li);
+    });
+    totalEl.textContent = "총액: " + fmt(total);
+    mapEl.textContent = "Map(" + cart.size + ") {" + Array.from(cart).map(function (kv) { return kv[0] + " => " + kv[1]; }).join(", ") + "}";
+  }
+  document.getElementById("d-search").addEventListener("input", function (e) { renderProducts(e.target.value); });
+  document.getElementById("d-clear").addEventListener("click", function () { cart.clear(); renderCart(); });
+  renderProducts(""); renderCart();
+})();
+</script>
+
+<script>
+(function () {
+  var P = window.PAGE || {};
+  // 파일 탐색기
+  var tree = document.getElementById("tree"), detail = document.getElementById("detail");
+  if (tree && detail && P.files) {
+    var files = P.files;
+    var show = function (i) {
+      var f = files[i];
+      detail.innerHTML = "<h4></h4><span class='when'></span><p></p>" + (f.a ? "<p class='an'></p>" : "");
+      detail.querySelector("h4").textContent = f.n;
+      detail.querySelector(".when").textContent = "생기는 때: " + f.when;
+      detail.querySelector("p").textContent = f.d;
+      if (f.a) detail.querySelector(".an").textContent = f.a;
+      tree.querySelectorAll("button").forEach(function (b, j) { b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+    };
+    files.forEach(function (f, i) {
+      var li = document.createElement("li"), b = document.createElement("button");
+      b.type = "button"; b.id = "file-" + i; b.textContent = f.n;
+      if (f.indent) b.classList.add("in");
+      if (f.gone) b.classList.add("gone");
+      b.addEventListener("click", function () { show(i); });
+      li.appendChild(b); tree.appendChild(li);
+    });
+    show(P.start || 0);
+  }
+  // 완료 점검표
+  var ul = document.getElementById("checks"), count = document.getElementById("count");
+  if (ul && P.checks) {
+    var KEY = P.key || "checks", saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
+    var update = function () { if (count) count.textContent = ul.querySelectorAll("input:checked").length + " / " + P.checks.length; };
+    P.checks.forEach(function (t, i) {
+      var li = document.createElement("li"), label = document.createElement("label"), cb = document.createElement("input"), span = document.createElement("span");
+      cb.type = "checkbox"; cb.id = "chk-" + i;
+      cb.checked = (i in saved) ? saved[i] : !!(P.done && P.done.indexOf(i) >= 0);
+      span.textContent = t;
+      cb.addEventListener("change", function () {
+        saved[i] = cb.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+        update();
+      });
+      label.appendChild(cb); label.appendChild(span); li.appendChild(label); ul.appendChild(li);
+    });
+    update();
+  }
+})();
+
+</script>
