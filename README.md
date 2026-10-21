@@ -6,10 +6,10 @@ SKN35 과정 **앱 개발 파트** 실습을 장(章)별로 모아 두는 저장
 | 장 | 주제 | 코드 | 풀이노트 | 검증 |
 |---|---|---|---|---|
 | 1장 | Python 3.12 · uv · VS Code · Django 개발환경 | [chapter01_project](chapter01_project) | [MD](notes/chapter01-풀이노트.md) · [HTML](notes/chapter01-풀이노트.html) | pytest 2 |
-| 2장 | Python 기본 문법과 상품 데이터 처리 | [chapter02_project](chapter02_project) | [MD](notes/chapter02-풀이노트.md) | pytest 8 |
-| 3장 | Python 모듈·예외 처리·JSON 상품 관리 | [chapter03_project](chapter03_project) | [MD](notes/chapter03-풀이노트.md) | pytest 13 |
-| 4장 | HTML·CSS·JavaScript 상품 웹 화면 | [chapter04_project](chapter04_project) | [MD](notes/chapter04-풀이노트.md) | pytest 6 + 브라우저 |
-| 5장 | Git·GitHub와 Django 쇼핑몰 프로젝트 | [chapter05_project](chapter05_project) | [MD](notes/chapter05-풀이노트.md) | pytest 5 + Django 3 + 브라우저 |
+| 2장 | Python 기본 문법과 상품 데이터 처리 | [chapter02_project](chapter02_project) | [MD](notes/chapter02-풀이노트.md) · [HTML](notes/chapter02-풀이노트.html) | pytest 8 |
+| 3장 | Python 모듈·예외 처리·JSON 상품 관리 | [chapter03_project](chapter03_project) | [MD](notes/chapter03-풀이노트.md) · [HTML](notes/chapter03-풀이노트.html) | pytest 13 |
+| 4장 | HTML·CSS·JavaScript 상품 웹 화면 | [chapter04_project](chapter04_project) | [MD](notes/chapter04-풀이노트.md) · [HTML](notes/chapter04-풀이노트.html) | pytest 6 + 브라우저 |
+| 5장 | Git·GitHub와 Django 쇼핑몰 프로젝트 | [chapter05_project](chapter05_project) | [MD](notes/chapter05-풀이노트.md) · [HTML](notes/chapter05-풀이노트.html) | pytest 5 + Django 3 + 브라우저 |
 
 ```mermaid
 flowchart LR
@@ -163,12 +163,11 @@ uv run python manage.py runserver 8000 # http://127.0.0.1:8000/ , /health/
 ```
 APPWORK/
 ├── README.md
-├── notes/                         # 장별 풀이노트 (mermaid 그림 포함)
-│   ├── chapter01-풀이노트.md · .html
-│   ├── chapter02-풀이노트.md
-│   ├── chapter03-풀이노트.md
-│   ├── chapter04-풀이노트.md
-│   └── chapter05-풀이노트.md
+├── notes/                         # 장별 풀이노트
+│   ├── chapter01~05-풀이노트.md     # GitHub에서 바로 읽는 버전 (mermaid 그림)
+│   └── chapter01~05-풀이노트.html   # 내려받아 브라우저로 여는 버전
+│                                  #   그림·파일 탐색기·확인 문제·점검표, 장 사이 이동 링크
+│                                  #   4장은 장바구니를 직접 눌러 보는 체험판 포함
 ├── chapter01_project/             # Django 개발환경 (config/, hello.py, tests/)
 ├── chapter02_project/             # 01~08 문법 예제, catalog.py, shop.py, tests/
 ├── chapter03_project/             # main.py, catalog/(cli·service·repository·exceptions), tests/
