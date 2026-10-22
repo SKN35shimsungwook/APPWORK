@@ -1,3 +1,5 @@
+-- MySQL 컨테이너의 기본 클라이언트 문자셋이 latin1이라 한글이 깨지지 않도록 utf8mb4로 지정한다.
+SET NAMES utf8mb4;
 -- Docker 볼륨이 비어 있는 최초 실행에서만 자동 실행한다.
 -- Django ORM 테이블과 충돌하지 않도록 별도 연습 테이블을 만든다.
 CREATE TABLE IF NOT EXISTS practice_products (
