@@ -1,4 +1,4 @@
-# Python 버전과 의존성을 동기화한다.
+﻿# Python 버전과 의존성을 동기화한다.
 uv python install 3.12
 uv sync
 # 프로젝트 설정을 점검한다.
