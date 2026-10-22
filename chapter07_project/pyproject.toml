@@ -1,0 +1,23 @@
+[project]
+name = "chapter07-mysql"
+version = "0.1.0"
+description = "제7장 Docker MySQL SQL Django 연결"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "django==5.2.7",
+    "mysqlclient>=2.2.7,<3",
+    "python-dotenv>=1,<2",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+pythonpath = ["."]
+addopts = "-ra"
+
+[dependency-groups]
+dev = [
+    "pytest>=8,<10",
+    "pytest-django>=4.8,<5",
+]

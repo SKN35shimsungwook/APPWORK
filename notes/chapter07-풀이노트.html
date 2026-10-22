@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7장 Docker MySQL 풀이 노트</title>
+<style>
+/* 레이아웃: 왼쪽 고정 목차 + 오른쪽 본문(약 46rem). 폰 폭에서는 목차가 위로 올라감 */
+:root {
+  --bg: #f4f7f5; --surface: #ffffff; --tint: #e7efea; --fg: #16231c; --muted: #5a6a61; --line: #d5dfd9;
+  --accent: #0c4b33; --on-accent: #ffffff; --accent-2: #2f9e6f;
+  --code-bg: #10201a; --code-fg: #d6eee1; --code-dim: #7fa592;
+  --warn: #a64a12; --warn-bg: #fbece1; --ok: #1d7249; --ok-bg: #e0f2e8; --next: #8a5a00; --next-bg: #fff2cf;
+  --f-body: "IBM Plex Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --f-code: "JetBrains Mono", Consolas, "D2Coding", monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e1512; --surface: #16201b; --tint: #1b2922; --fg: #e2ebe5; --muted: #98a99f; --line: #2a3830;
+  --accent: #6fd3a5; --on-accent: #0b1a13; --accent-2: #4fc08d;
+  --code-bg: #08100c; --code-fg: #cfe8da; --code-dim: #6f9482;
+  --warn: #f2a46c; --warn-bg: #36220f; --ok: #82d9aa; --ok-bg: #15301f; --next: #f3c654; --next-bg: #3a2e0c;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0e1512; --surface: #16201b; --tint: #1b2922; --fg: #e2ebe5; --muted: #98a99f; --line: #2a3830;
+  --accent: #6fd3a5; --on-accent: #0b1a13; --accent-2: #4fc08d;
+  --code-bg: #08100c; --code-fg: #cfe8da; --code-dim: #6f9482;
+  --warn: #f2a46c; --warn-bg: #36220f; --ok: #82d9aa; --ok-bg: #15301f; --next: #f3c654; --next-bg: #3a2e0c;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.75; padding-inline: 16px; padding-block: 0 4rem; }
+.wrap { max-width: 72rem; margin: 0 auto; display: grid; grid-template-columns: 13rem minmax(0, 1fr); gap: 3rem; }
+nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; padding-top: 2.5rem; font-size: .88rem; }
+nav.toc p { font-size: .72rem; letter-spacing: .08em; color: var(--muted); margin: 0 0 .5rem; font-weight: 700; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .15rem; counter-reset: t; }
+nav.toc a { color: var(--muted); text-decoration: none; display: block; padding: .2rem .5rem; border-radius: 6px; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); background: var(--tint); outline: none; }
+main { min-width: 0; max-width: 48rem; }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0,1fr); gap: 0; }
+  nav.toc { position: static; padding-top: 1.5rem; }
+  nav.toc ol { display: flex; flex-wrap: wrap; gap: .3rem; }
+  nav.toc a { border: 1px solid var(--line); background: var(--surface); }
+}
+
+header.hero { padding-block: 2.5rem 1.5rem; border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: .75rem; letter-spacing: .1em; color: var(--accent); font-weight: 700; margin: 0; }
+h1 { font-size: clamp(1.9rem, 4.5vw, 2.6rem); line-height: 1.25; margin: .4rem 0 .8rem; text-wrap: balance; letter-spacing: -.01em; }
+h1 .v { font-family: var(--f-code); font-weight: 600; font-size: .62em; color: var(--accent); vertical-align: middle; }
+.lede { color: var(--muted); max-width: 40rem; margin: 0; }
+section { padding-block: 2.6rem 0.5rem; scroll-margin-top: 1rem; }
+h2 { font-size: 1.5rem; line-height: 1.35; margin: 0 0 .3rem; text-wrap: balance; }
+h2 small { display: block; font-size: .78rem; font-weight: 500; color: var(--muted); letter-spacing: .02em; }
+h3 { font-size: 1.1rem; margin: 2rem 0 .4rem; }
+p { margin: .6rem 0; max-width: 42rem; }
+code { font-family: var(--f-code); font-size: .86em; background: var(--tint); padding: .08em .35em; border-radius: 4px; }
+pre { font-family: var(--f-code); font-size: .84rem; line-height: 1.65; background: var(--code-bg); color: var(--code-fg); padding: 1rem 1.1rem; border-radius: 10px; overflow-x: auto; margin: .8rem 0; }
+pre code { background: none; padding: 0; font-size: 1em; }
+pre .c { color: var(--code-dim); }
+pre .k { color: #8fe0b6; font-weight: 600; }
+strong { font-weight: 700; }
+.note { border-left: 3px solid var(--accent-2); background: var(--surface); padding: .7rem 1rem; border-radius: 0 8px 8px 0; margin: 1rem 0; font-size: .95rem; }
+.note.warn { border-color: var(--warn); background: var(--warn-bg); }
+.scroll { overflow-x: auto; margin: 1rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; min-width: 30rem; }
+th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; color: var(--muted); letter-spacing: .04em; font-weight: 700; background: var(--tint); }
+td code { white-space: nowrap; }
+
+/* 1. 도구 층 */
+.layers { display: grid; gap: 0; margin: 1.2rem 0; }
+.layer { border: 1px solid var(--line); background: var(--surface); padding: .8rem 1rem; display: grid; grid-template-columns: 9.5rem minmax(0,1fr); gap: 1rem; align-items: center; }
+.layer + .layer { border-top: 0; }
+.layer:first-child { border-radius: 10px 10px 0 0; }
+.layer:last-child { border-radius: 0 0 10px 10px; }
+.layer b { font-family: var(--f-code); font-size: .95rem; color: var(--accent); }
+.layer span { font-size: .92rem; }
+.layer em { font-style: normal; color: var(--muted); font-size: .82rem; display: block; }
+.layer.top { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.layer.top b, .layer.top em { color: var(--on-accent); }
+@media (max-width: 520px) { .layer { grid-template-columns: minmax(0,1fr); gap: .2rem; } }
+
+/* 2. 진행 지도 */
+.journey { list-style: none; padding: 0; margin: 1.2rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(12.5rem, 1fr)); gap: .6rem; counter-reset: s; }
+.journey li { counter-increment: s; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem .85rem; font-size: .9rem; line-height: 1.5; display: grid; gap: .25rem; }
+.journey li::before { content: counter(s); font-family: var(--f-code); font-size: .75rem; color: var(--muted); }
+.journey li b { font-size: .95rem; }
+.journey li code { font-size: .78rem; justify-self: start; }
+.pill { justify-self: start; font-size: .72rem; font-weight: 700; padding: .05rem .5rem; border-radius: 99px; }
+.pill.done { background: var(--ok-bg); color: var(--ok); }
+.pill.next { background: var(--next-bg); color: var(--next); }
+.pill.todo { background: var(--tint); color: var(--muted); }
+.journey li.is-next { border: 2px solid var(--next); }
+
+/* 다이어그램 공통 */
+figure { margin: 1.2rem 0; }
+figcaption { font-size: .82rem; color: var(--muted); margin-top: .4rem; }
+.diagram { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; }
+.diagram svg { display: block; min-width: 640px; width: 100%; height: auto; }
+svg .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+svg .box.hl { fill: var(--tint); stroke: var(--accent-2); }
+svg .box.db { fill: var(--tint); stroke: var(--accent); }
+svg .t { fill: var(--fg); font-family: var(--f-code); font-size: 15px; font-weight: 600; }
+svg .s { fill: var(--muted); font-family: var(--f-body); font-size: 12.5px; }
+svg .ar { stroke: var(--accent-2); stroke-width: 2; fill: none; }
+svg .ar.back { stroke-dasharray: 5 4; }
+svg .num { fill: var(--accent); }
+svg .numt { fill: var(--on-accent); font-family: var(--f-code); font-size: 12px; font-weight: 600; }
+svg .head { fill: var(--accent-2); }
+
+/* 갈림길 */
+.paths { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .8rem; margin: 1rem 0; }
+.path { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem; font-size: .92rem; min-width: 0; }
+.path h4 { margin: 0 0 .3rem; font-size: 1rem; }
+.path ol { margin: .4rem 0 0; padding-left: 1.2rem; }
+.path.mine { border: 2px solid var(--accent-2); }
+@media (max-width: 600px) { .paths { grid-template-columns: minmax(0,1fr); } }
+
+/* 실수 카드 */
+.oops { display: grid; gap: .6rem; margin: 1rem 0; }
+.oop { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: .88rem; }
+.oop div { padding: .6rem .8rem; min-width: 0; }
+.oop .bad { background: var(--warn-bg); }
+.oop .good { background: var(--ok-bg); }
+.oop code { background: none; padding: 0; word-break: break-all; }
+.oop small { display: block; color: var(--muted); font-size: .78rem; margin-top: .2rem; }
+.oop .lbl { font-size: .7rem; font-weight: 700; letter-spacing: .06em; display: block; }
+.oop .bad .lbl { color: var(--warn); }
+.oop .good .lbl { color: var(--ok); }
+@media (max-width: 560px) { .oop { grid-template-columns: minmax(0,1fr); } }
+
+/* 파일 탐색기 */
+.explorer { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0,1fr); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface); margin: 1.2rem 0; }
+.tree { list-style: none; margin: 0; padding: .6rem; border-right: 1px solid var(--line); background: var(--tint); font-family: var(--f-code); font-size: .84rem; }
+.tree button { all: unset; cursor: pointer; display: block; width: 100%; box-sizing: border-box; padding: .25rem .5rem; border-radius: 6px; color: var(--fg); }
+.tree button:hover { background: var(--surface); }
+.tree button:focus-visible { outline: 2px solid var(--accent-2); }
+.tree button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.tree .in { padding-left: 1.2rem; }
+.tree .gone { text-decoration: line-through; opacity: .6; }
+.detail { padding: 1rem 1.2rem; min-width: 0; }
+.detail h4 { font-family: var(--f-code); margin: 0; font-size: 1.05rem; color: var(--accent); }
+.detail .when { display: inline-block; font-size: .74rem; font-weight: 700; background: var(--tint); color: var(--muted); padding: .05rem .55rem; border-radius: 99px; margin: .35rem 0 .3rem; }
+.detail p { font-size: .93rem; }
+.detail .an { font-size: .88rem; color: var(--muted); border-top: 1px dashed var(--line); padding-top: .5rem; margin-top: .6rem; }
+@media (max-width: 620px) { .explorer { grid-template-columns: minmax(0,1fr); } .tree { border-right: 0; border-bottom: 1px solid var(--line); } }
+
+/* BASE_DIR 트리 */
+.pathtree { font-family: var(--f-code); font-size: .88rem; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; line-height: 2; overflow-x: auto; white-space: nowrap; }
+.pathtree .tag { font-size: .74rem; font-weight: 600; padding: .05rem .5rem; border-radius: 99px; margin-left: .6rem; font-family: var(--f-body); }
+.tag.a { background: var(--accent); color: var(--on-accent); }
+.tag.b { background: var(--tint); color: var(--accent); border: 1px solid var(--accent-2); }
+.tag.c { background: var(--next-bg); color: var(--next); }
+.pathtree .dim { color: var(--muted); }
+
+/* .env 흐름 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 1rem 0; font-size: .86rem; }
+.flow .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .45rem .7rem; line-height: 1.4; }
+.flow .chip b { font-family: var(--f-code); display: block; font-size: .85rem; }
+.flow .chip small { color: var(--muted); }
+.flow .chip.key { border-color: var(--accent-2); background: var(--tint); }
+.flow .chip.lock { border-color: var(--warn); background: var(--warn-bg); }
+.flow .arr { color: var(--accent-2); font-weight: 700; }
+
+/* 미들웨어 */
+.mw { display: grid; grid-template-columns: 2.4rem minmax(0,1fr) 2.4rem; gap: 0 .6rem; margin: 1.2rem 0; }
+.mw .side { display: flex; flex-direction: column; align-items: center; justify-content: space-between; font-size: .75rem; font-weight: 700; color: var(--accent-2); writing-mode: vertical-rl; letter-spacing: .1em; border-radius: 99px; background: var(--tint); padding: .8rem 0; }
+.mw .side.up { color: var(--accent); }
+.mw ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .35rem; counter-reset: m; }
+.mw li { counter-increment: m; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .4rem .7rem; display: grid; grid-template-columns: 1.4rem minmax(0, 13.5rem) minmax(0,1fr); gap: .5rem; font-size: .84rem; align-items: baseline; }
+.mw li::before { content: counter(m); font-family: var(--f-code); color: var(--muted); font-size: .75rem; }
+.mw li b { font-family: var(--f-code); font-size: .8rem; font-weight: 600; overflow-wrap: anywhere; }
+.mw li span { color: var(--muted); }
+.mw li.view { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.mw li.view::before { content: ""; }
+.mw li.view span { color: var(--on-accent); }
+@media (max-width: 560px) { .mw li { grid-template-columns: 1.2rem minmax(0,1fr); } .mw li span { grid-column: 2; } }
+
+/* 앱 순서 */
+.seq { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; margin: .6rem 0 1rem; font-size: .84rem; }
+.seq span { background: var(--surface); border: 1px solid var(--line); padding: .3rem .6rem; border-radius: 6px; }
+.seq i { font-style: normal; color: var(--accent-2); }
+.seq .lead { background: none; border: 0; font-weight: 700; padding-left: 0; }
+
+/* 퀴즈, 체크리스트 */
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .7rem 1rem; margin: .5rem 0; }
+details summary { cursor: pointer; font-weight: 500; }
+details summary::marker { color: var(--accent-2); }
+details[open] summary { margin-bottom: .4rem; color: var(--accent); }
+details p { font-size: .93rem; margin: .3rem 0; }
+.checks { list-style: none; padding: 0; margin: 1rem 0; display: grid; gap: .35rem; }
+.checks label { display: flex; gap: .6rem; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: .5rem .8rem; cursor: pointer; font-size: .93rem; }
+.checks input { accent-color: var(--accent-2); margin-top: .35rem; width: 1rem; height: 1rem; flex: none; }
+.checks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.checks input:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.count { font-family: var(--f-code); font-size: .85rem; color: var(--muted); }
+footer { margin-top: 3rem; font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+/* 2~5장 공통 추가 */
+.chapnav { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: 1rem; font-size: .8rem; }
+.chapnav a { color: var(--muted); text-decoration: none; border: 1px solid var(--line); background: var(--surface); padding: .15rem .6rem; border-radius: 99px; }
+.chapnav a[aria-current="page"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chapnav a:hover, .chapnav a:focus-visible { border-color: var(--accent-2); outline: none; }
+.out { font-family: var(--f-code); font-size: .82rem; background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: .6rem .8rem; white-space: pre-wrap; margin: .5rem 0; }
+.out b { color: var(--ok); font-weight: 600; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; margin: 1rem 0; }
+.grid2 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: .9rem 1rem; min-width: 0; font-size: .92rem; }
+.grid2 h4 { margin: 0 0 .3rem; font-size: .98rem; }
+.grid2 pre { margin: .5rem 0 0; }
+@media (max-width: 600px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.cols3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; margin: 1rem 0; }
+.cols3 > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .8rem; text-align: center; font-size: .88rem; }
+.cols3 .bar { display: grid; gap: 4px; margin: .6rem auto 0; max-width: 9rem; }
+.cols3 .bar i { display: block; height: 22px; border-radius: 4px; background: var(--tint); border: 1px solid var(--accent-2); }
+@media (max-width: 520px) { .cols3 { grid-template-columns: minmax(0, 1fr); } }
+
+</style>
+<div class="wrap">
+<nav class="toc" aria-label="목차">
+  <p>목차</p>
+  <ol>
+    <li><a href="#docker">Docker가 뭔가</a></li>
+    <li><a href="#terms">용어 4개</a></li>
+    <li><a href="#arch">전체 구조</a></li>
+    <li><a href="#files">파일 탐색기</a></li>
+    <li><a href="#compose">compose.yaml</a></li>
+    <li><a href="#cmd">Docker 명령</a></li>
+    <li><a href="#sql">SQL CRUD</a></li>
+    <li><a href="#orm">Django 연결·ORM</a></li>
+    <li><a href="#run">실행 순서</a></li>
+    <li><a href="#status">확인한 것·못 한 것</a></li>
+    <li><a href="#diff">교재와 다른 곳</a></li>
+    <li><a href="#trouble">오류 해결</a></li>
+    <li><a href="#quiz">확인 문제</a></li>
+    <li><a href="#check">완료 점검표</a></li>
+  </ol>
+</nav>
+
+<main>
+<header class="hero">
+  <p class="eyebrow">PART 2 · 제7장 풀이</p>
+  <h1>Docker · MySQL 설치 및 SQL 기초</h1>
+  <p class="lede">실무에서 쓰는 MySQL 8.4를 Docker 컨테이너로 띄우고, SQL로 직접 다뤄 본 뒤, Django ORM으로 연결합니다. 6장까지 쓰던 SQLite가 MySQL로 바뀝니다.</p>
+  <div class="chapnav"><a href="chapter01-풀이노트.html">1장</a><a href="chapter02-풀이노트.html">2장</a><a href="chapter03-풀이노트.html">3장</a><a href="chapter04-풀이노트.html">4장</a><a href="chapter05-풀이노트.html">5장</a><a href="chapter06-풀이노트.html">6장</a><a href="chapter07-풀이노트.html" aria-current="page">7장</a></div>
+</header>
+
+<section id="docker">
+  <h2>Docker가 뭔가<small>프로그램을 "필요한 모든 것과 함께" 상자에 담아 어디서든 똑같이 실행</small></h2>
+  <div class="paths">
+    <div class="path">
+      <h4>MySQL을 Windows에 직접 설치</h4>
+      <ol>
+        <li>설치 마법사, 서비스 등록</li>
+        <li>PC마다 버전·설정이 조금씩 다름</li>
+        <li>지울 때 찌꺼기가 남음</li>
+      </ol>
+    </div>
+    <div class="path mine">
+      <h4>Docker로 실행</h4>
+      <ol>
+        <li>설치·설정이 끝난 상자(이미지)를 내려받음</li>
+        <li>내 PC든 강사 PC든 서버든 똑같이 동작</li>
+        <li>필요 없으면 상자째 버리면 끝</li>
+      </ol>
+    </div>
+  </div>
+  <div class="grid2">
+    <div><h4>가상머신과 다른 점</h4><p>가상머신은 운영체제를 통째로 하나 더 띄워 무겁습니다. 컨테이너는 운영체제 핵심(커널)은 같이 쓰고 <strong>프로그램만 격리</strong>해서 몇 초 만에 켜집니다.</p></div>
+    <div><h4>Windows에서는</h4><p>Docker Desktop이 WSL2라는 작은 리눅스를 깔고, 그 위에서 리눅스 컨테이너(MySQL)를 돌립니다. 그래서 설치할 때 관리자 권한과 재부팅이 필요합니다.</p></div>
+  </div>
+  <p><strong>수업에서 Docker를 쓰는 이유:</strong> 설치·삭제가 깔끔하고(<code>up -d</code> / <code>down</code>), 수강생 모두 같은 버전·설정을 쓰고, 설정이 <code>compose.yaml</code> 파일 하나에 적혀 Git으로 공유되며, 실무 배포도 대부분 컨테이너로 하기 때문입니다.</p>
+</section>
+
+<section id="terms">
+  <h2>용어 4개<small>이것만 알면 7장 compose.yaml이 읽힌다</small></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>용어</th><th>비유</th><th>7장에서</th></tr></thead>
+    <tbody>
+      <tr><td><b>이미지</b></td><td>설치가 끝난 프로그램의 "붕어빵 틀" (읽기 전용)</td><td><code>mysql:8.4</code> · Docker Hub에서 내려받음</td></tr>
+      <tr><td><b>컨테이너</b></td><td>틀로 찍어 낸 "실행 중인 붕어빵"</td><td><code>chapter07-mysql</code></td></tr>
+      <tr><td><b>볼륨</b></td><td>컨테이너를 버려도 남는 "외장 하드"</td><td><code>mysql_data</code> · DB 데이터 보관</td></tr>
+      <tr><td><b>포트 연결</b></td><td>상자 벽에 뚫은 "창구"</td><td>Windows 3307 ↔ 컨테이너 3306</td></tr>
+    </tbody>
+  </table></div>
+  <figure>
+    <div class="diagram">
+      <svg viewBox="0 0 820 270" role="img" aria-label="Windows PC 안에서 Django가 3307 포트로 Docker Desktop 안의 MySQL 컨테이너 3306 포트에 접속하고, 컨테이너는 볼륨과 sql 폴더에 연결된다">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <rect class="box" x="10" y="10" width="800" height="250" rx="16" style="fill:none"/>
+        <text class="s" x="30" y="34">내 Windows PC</text>
+        <rect class="box hl" x="380" y="44" width="410" height="150" rx="14"/>
+        <text class="s" x="400" y="66">Docker Desktop (WSL2 리눅스 위)</text>
+        <rect class="box db" x="430" y="82" width="220" height="80" rx="12"/>
+        <text class="t" x="540" y="112" text-anchor="middle">컨테이너</text>
+        <text class="s" x="540" y="132" text-anchor="middle">chapter07-mysql</text>
+        <text class="s" x="540" y="150" text-anchor="middle">MySQL 8.4 · 포트 3306</text>
+        <rect class="box" x="40" y="92" width="170" height="62" rx="10"/>
+        <text class="t" x="125" y="119" text-anchor="middle">Django</text>
+        <text class="s" x="125" y="139" text-anchor="middle">127.0.0.1:3307</text>
+        <path class="ar" d="M210 123 L 426 123" marker-end="url(#ah)"/>
+        <text class="s" x="318" y="113" text-anchor="middle">3307 → 3306</text>
+        <rect class="box" x="430" y="206" width="160" height="42" rx="10"/>
+        <text class="s" x="510" y="232" text-anchor="middle">볼륨 mysql_data</text>
+        <path class="ar" d="M510 166 L 510 202" marker-end="url(#ah)"/>
+        <rect class="box" x="620" y="206" width="170" height="42" rx="10"/>
+        <text class="s" x="705" y="232" text-anchor="middle">sql/ 초기화 SQL</text>
+        <path class="ar back" d="M690 202 C 680 180, 660 170, 640 150" marker-end="url(#ah)"/>
+        <text class="s" x="740" y="186" text-anchor="middle">최초 1회</text>
+      </svg>
+    </div>
+  </figure>
+</section>
+
+<section id="arch">
+  <h2>전체 구조<small>교재 3절</small></h2>
+  <div class="flow">
+    <div class="chip"><b>브라우저</b><small>상품 목록 요청</small></div>
+    <span class="arr">→</span>
+    <div class="chip"><b>Django</b><small>URL → View → ORM</small></div>
+    <span class="arr">→</span>
+    <div class="chip key"><b>MySQL 8.4</b><small>Docker 컨테이너</small></div>
+    <span class="arr">→</span>
+    <div class="chip"><b>데이터 볼륨</b><small>mysql_data</small></div>
+  </div>
+  <p><strong>테이블이 두 종류</strong>라는 게 헷갈리기 쉽습니다.</p>
+  <div class="scroll"><table>
+    <thead><tr><th>테이블</th><th>만드는 곳</th><th>용도</th></tr></thead>
+    <tbody>
+      <tr><td><code>practice_products</code></td><td>sql/01_schema.sql (SQL 직접 작성)</td><td>SQL 문법 연습용</td></tr>
+      <tr><td><code>shop_product</code></td><td>Django migrate (models.py에서 생성)</td><td>웹 화면이 실제로 쓰는 테이블</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="files">
+  <h2>파일 탐색기<small>파일 이름을 누르면 설명이 나옵니다</small></h2>
+  <div class="explorer">
+    <ul class="tree" id="tree"></ul>
+    <div class="detail" id="detail" aria-live="polite"></div>
+  </div>
+</section>
+
+<section id="compose">
+  <h2>compose.yaml 풀이<small>MySQL 컨테이너 설계도</small></h2>
+<pre><code>services:
+  mysql:
+    image: mysql:8.4                                <span class="c"># 어떤 이미지로</span>
+    container_name: chapter07-mysql                 <span class="c"># 컨테이너 이름</span>
+    restart: unless-stopped                         <span class="c"># 직접 끄지 않으면 자동 재시작</span>
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
+      MYSQL_USER: ${MYSQL_USER:?…}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?…}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?…}
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3307}:3306"        <span class="c"># 내 PC에서만, 3307 → 3306</span>
+    volumes:
+      - mysql_data:/var/lib/mysql                   <span class="c"># 데이터는 볼륨에</span>
+      - ./sql:/docker-entrypoint-initdb.d:ro        <span class="c"># 초기화 SQL, 읽기 전용</span>
+    healthcheck:                                    <span class="c"># 10초마다 mysqladmin ping</span>
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysqladmin ping …"]
+volumes:
+  mysql_data:</code></pre>
+  <div class="scroll"><table>
+    <thead><tr><th>문법</th><th>뜻</th></tr></thead>
+    <tbody>
+      <tr><td><code>${VAR:?메시지}</code></td><td>.env에 값이 없으면 메시지를 띄우고 멈춤</td></tr>
+      <tr><td><code>${VAR:-기본값}</code></td><td>값이 없으면 기본값</td></tr>
+      <tr><td><code>127.0.0.1:3307:3306</code></td><td>다른 PC에선 접속 불가. 3306 대신 3307을 쓰는 건 PC에 MySQL이 이미 있어도 충돌하지 않게</td></tr>
+      <tr><td><code>$$MYSQL_PASSWORD</code></td><td>Compose가 미리 바꾸지 말고 컨테이너 안에서 해석하라는 뜻</td></tr>
+      <tr><td><code>:ro</code></td><td>read-only. 컨테이너가 sql 폴더를 고치지 못함</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note warn"><strong>첫 실행에만 적용되는 것:</strong> <code>sql/</code> 초기화 스크립트와 <code>MYSQL_USER</code>·비밀번호 같은 계정 설정은 <strong>볼륨이 비어 있을 때 한 번만</strong> 적용됩니다. 나중에 .env 비밀번호를 바꿔도 기존 DB에는 반영되지 않아서 "Access denied"가 납니다. 완전히 처음부터 하려면 <code>docker compose down -v</code>(데이터 삭제)를 씁니다.</div>
+</section>
+
+<section id="cmd">
+  <h2>Docker 명령<small>프로젝트 루트(compose.yaml이 있는 곳)에서</small></h2>
+  <div class="mw">
+    <div class="side">사용 순서</div>
+    <ol>
+      <li><b>docker compose config</b><span>compose.yaml + .env를 합친 최종 설정 확인 (오타 검사)</span></li>
+      <li><b>docker compose up -d</b><span>백그라운드 실행. 처음엔 mysql:8.4 이미지 다운로드</span></li>
+      <li><b>docker compose ps</b><span>상태 확인. healthy가 나와야 준비 완료</span></li>
+      <li><b>docker compose logs mysql</b><span>MySQL 로그 보기</span></li>
+      <li><b>docker compose exec mysql …</b><span>컨테이너 안에서 명령 실행 (mysql 접속 등)</span></li>
+      <li><b>docker compose down</b><span>컨테이너 중지·삭제. 볼륨(데이터)은 유지</span></li>
+      <li class="view"><b>docker compose down -v</b><span>볼륨까지 삭제 = 데이터 초기화</span></li>
+    </ol>
+    <div class="side up">위험도 ↑</div>
+  </div>
+</section>
+
+<section id="sql">
+  <h2>SQL CRUD<small>sql/03_queries.sql</small></h2>
+<pre><code><span class="c">-- R 조회</span>
+SELECT id, name, price, stock FROM practice_products ORDER BY price DESC;
+SELECT name, price FROM practice_products WHERE price &lt; 100000;
+<span class="c">-- C 등록</span>
+INSERT INTO practice_products (name, price, stock) VALUES ('모니터', 220000, 8);
+<span class="c">-- U 수정</span>
+UPDATE practice_products SET stock = stock - 1 WHERE name = '마우스' AND stock &gt; 0;
+<span class="c">-- D 삭제</span>
+DELETE FROM practice_products WHERE name = '모니터';
+<span class="c">-- 집계</span>
+SELECT COUNT(*) AS product_count, SUM(stock) AS total_stock FROM practice_products;</code></pre>
+  <div class="scroll"><table>
+    <thead><tr><th>SQL</th><th>뜻</th><th>2~3장 파이썬으로 치면</th></tr></thead>
+    <tbody>
+      <tr><td><code>SELECT … FROM</code></td><td>어떤 열을 어디서</td><td>리스트에서 꺼내기</td></tr>
+      <tr><td><code>WHERE</code></td><td>조건에 맞는 행만</td><td>리스트 컴프리헨션의 if</td></tr>
+      <tr><td><code>ORDER BY … DESC</code></td><td>내림차순 정렬</td><td>sorted(…, reverse=True)</td></tr>
+      <tr><td><code>INSERT INTO</code></td><td>행 추가</td><td>append</td></tr>
+      <tr><td><code>UPDATE … SET</code></td><td>값 수정</td><td>product["stock"] -= 1</td></tr>
+      <tr><td><code>DELETE FROM</code></td><td>행 삭제</td><td>remove</td></tr>
+      <tr><td><code>COUNT</code>, <code>SUM</code></td><td>집계</td><td>len, sum</td></tr>
+    </tbody>
+  </table></div>
+  <div class="oops">
+    <div class="oop"><div class="bad"><span class="lbl">위험</span><code>DELETE FROM practice_products;</code><small>WHERE를 빼면 테이블 전체가 지워짐 (UPDATE도 마찬가지)</small></div><div class="good"><span class="lbl">습관</span><code>… WHERE name = '모니터';</code><small>항상 WHERE부터 확인</small></div></div>
+  </div>
+  <p><code>01_schema.sql</code>의 <code>CHECK (price &gt;= 0)</code>, <code>CHECK (stock &gt;= 0)</code>는 DB가 음수를 거부하게 만듭니다. 2장에서 파이썬으로 하던 검사를 DB가 한 번 더 해 줍니다.</p>
+<pre><code><span class="c"># 내 PC에 MySQL 클라이언트를 설치하지 않고 컨테이너 안에서 접속</span>
+docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE"'
+mysql&gt; SHOW TABLES;      <span class="c"># practice_products</span></code></pre>
+</section>
+
+<section id="orm">
+  <h2>Django를 MySQL에 연결<small>settings.py · models.py</small></h2>
+<pre><code>DATABASES = {"default": {
+    "ENGINE": <span class="k">"django.db.backends.mysql"</span>,          <span class="c"># 6장: sqlite3</span>
+    "NAME": os.environ.get("MYSQL_DATABASE", "shopdb"),
+    "USER": os.environ.get("MYSQL_USER", "shopuser"),
+    "PASSWORD": os.environ.get("MYSQL_PASSWORD", ""),
+    "HOST": os.environ.get("MYSQL_HOST", "127.0.0.1"),
+    "PORT": os.environ.get("MYSQL_PORT", "3307"),
+    "OPTIONS": {"charset": "utf8mb4"},              <span class="c"># 한글·이모지</span>
+    "TEST": {"NAME": "test_" + …},                   <span class="c"># pytest용 DB 이름</span>
+}}</code></pre>
+  <p><code>mysqlclient</code>는 Django가 MySQL과 대화할 때 쓰는 드라이버입니다. 접속 정보는 전부 <code>.env</code>에서 읽고, compose.yaml도 같은 .env를 읽으니 <strong>값을 한 곳에서만 관리</strong>합니다.</p>
+<pre><code>class Product(models.Model):
+    name = models.CharField(max_length=100)
+    price = models.PositiveIntegerField()           <span class="c"># 음수 불가</span>
+    stock = models.PositiveIntegerField(default=0)
+    class Meta:
+        ordering = ["id"]                            <span class="c"># 기본 정렬</span></code></pre>
+  <div class="scroll"><table>
+    <thead><tr><th>ORM (파이썬)</th><th>SQL</th></tr></thead>
+    <tbody>
+      <tr><td><code>Product.objects.all()</code></td><td>SELECT * FROM shop_product ORDER BY id</td></tr>
+      <tr><td><code>.filter(price__lt=100000)</code></td><td>WHERE price &lt; 100000</td></tr>
+      <tr><td><code>.filter(stock__gt=0).count()</code></td><td>SELECT COUNT(*) … WHERE stock &gt; 0</td></tr>
+      <tr><td><code>.order_by("-price").first()</code></td><td>ORDER BY price DESC LIMIT 1</td></tr>
+      <tr><td><code>.update_or_create(name=…, defaults=…)</code></td><td>있으면 UPDATE, 없으면 INSERT</td></tr>
+    </tbody>
+  </table></div>
+  <div class="seq"><span class="lead">마이그레이션</span><span>models.py</span><i>→ makemigrations shop →</i><span>0001_initial.py (설계도)</span><i>→ migrate →</i><span>MySQL에 shop_product 테이블</span></div>
+  <p><code>__lt</code>(less than), <code>__gt</code>(greater than)처럼 밑줄 두 개로 조건을 붙입니다. ORM 덕분에 DB가 SQLite든 MySQL이든 파이썬 코드는 그대로입니다. 관리자 페이지(<code>/admin/</code>)에 들어가려면 <code>createsuperuser</code>로 계정을 먼저 만듭니다.</p>
+</section>
+
+<section id="run">
+  <h2>실행 순서<small>교재 7절</small></h2>
+<pre><code>uv sync
+Copy-Item .env.example .env                 <span class="c"># 비밀번호·비밀키 변경</span>
+docker compose up -d
+docker compose ps                           <span class="c"># healthy 확인</span>
+uv run python manage.py migrate
+uv run python -m scripts.seed_products      <span class="c"># 노트북·마우스·키보드</span>
+uv run python manage.py runserver 127.0.0.1:8000
+<span class="c"># 다른 PowerShell 창에서</span>
+uv run pytest -v
+uv run python -m exercises.solutions</code></pre>
+</section>
+
+<section id="status">
+  <h2>제 PC에서 확인한 것과 못 한 것<small>Docker Desktop 미설치 상태</small></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>항목</th><th>상태</th></tr></thead>
+    <tbody>
+      <tr><td>uv add (django, mysqlclient, dotenv, pytest)</td><td>✅ 설치됨, mysqlclient 2.3.0</td></tr>
+      <tr><td>manage.py check</td><td>✅ no issues</td></tr>
+      <tr><td>makemigrations shop</td><td>✅ 교재 단계 22와 같은 0001_initial.py</td></tr>
+      <tr><td>모델·화면·테스트·시드·과제 코드</td><td>✅ DB만 SQLite로 바꾼 임시 설정으로 확인: pytest 4 passed, 상품 3개 등록, 과제 출력 정상</td></tr>
+      <tr><td>docker compose up, SQL 실습, MySQL 위 pytest</td><td>⏳ Docker Desktop 설치 후 확인 필요</td></tr>
+    </tbody>
+  </table></div>
+<div class="out">$ uv run python -m exercises.solutions   (SQLite 대체 확인)
+<b>[과제 1] 10만 원 미만 상품
+마우스 25000
+키보드 65000
+[과제 2] 재고 보유 상품 수: 3
+[과제 3] 최고가 상품: 노트북</b></div>
+</section>
+
+<section id="diff">
+  <h2>교재와 다르게 한 곳</h2>
+  <div class="oops">
+    <div class="oop"><div class="bad"><span class="lbl">교재 settings.py</span><code>STATICFILES_DIRS 없음</code><small>7장은 CSS를 프로젝트 루트 static/shop/style.css에 두는데 Django가 이 폴더를 몰라서 findstatic이 "No matching file found" (직접 확인) → 화면에 CSS 안 입혀짐</small></div><div class="good"><span class="lbl">수정</span><code>STATICFILES_DIRS = [BASE_DIR / "static"]</code><small>추가 후 findstatic이 파일을 찾음</small></div></div>
+  </div>
+</section>
+
+<section id="trouble">
+  <h2>오류 해결<small>교재 8절</small></h2>
+  <div class="scroll"><table>
+    <thead><tr><th>증상</th><th>해결</th></tr></thead>
+    <tbody>
+      <tr><td>docker compose up -d 실패</td><td>Docker Desktop을 먼저 실행하고 Linux 컨테이너 모드 확인</td></tr>
+      <tr><td>3307 포트 사용 중</td><td>.env의 MYSQL_PORT를 다른 포트로 (Django도 같은 값을 읽음)</td></tr>
+      <tr><td>Access denied</td><td>.env 비밀번호와 볼륨에 처음 저장된 계정이 다름 → DB 안에서 변경 또는 down -v 후 재초기화</td></tr>
+      <tr><td>테스트 DB 생성 권한 없음</td><td>MySQL 앱 계정에 test_shopdb 생성 권한 부여 (이미지는 MYSQL_USER에게 shopdb 권한만 줌)</td></tr>
+      <tr><td>SQL 초기화 파일이 실행 안 됨</td><td>빈 볼륨의 첫 실행에만 적용 → 기존 볼륨에서는 수동 실행</td></tr>
+      <tr><td>mysqlclient 설치 실패</td><td>Python 3.12와 호환 wheel 확인</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="quiz">
+  <h2>확인 문제<small>눌러서 답 보기</small></h2>
+  <details><summary>Docker 볼륨을 사용하는 이유는?</summary><p>컨테이너를 종료하거나 다시 생성해도 MySQL 데이터를 유지하기 위해서입니다.</p></details>
+  <details><summary>Django DATABASES의 ENGINE 값은?</summary><p>django.db.backends.mysql입니다.</p></details>
+  <details><summary>WHERE, UPDATE, DELETE의 역할은?</summary><p>WHERE는 행을 필터링하고 UPDATE는 데이터를 수정하며 DELETE는 행을 삭제합니다.</p></details>
+  <details><summary>SQL 초기화 테이블과 Django Product 테이블의 차이는?</summary><p>practice_products는 SQL 연습용이고 shop_product는 Django 마이그레이션으로 생성되는 ORM 테이블입니다.</p></details>
+  <details><summary>pytest-django가 필요한 이유는?</summary><p>Django 설정과 테스트 DB, Django 테스트 클라이언트 등 테스트 통합 기능을 제공하기 때문입니다.</p></details>
+  <details><summary>이미지와 컨테이너의 차이는?</summary><p>이미지는 실행 준비가 끝난 읽기 전용 틀이고, 컨테이너는 그 이미지로 실제 실행 중인 인스턴스입니다. 이미지 하나로 컨테이너를 여러 개 만들 수 있습니다.</p></details>
+</section>
+
+<section id="check">
+  <h2>완료 점검표 <span class="count" id="count"></span><small>체크 상태는 이 브라우저에만 저장됩니다</small></h2>
+  <ul class="checks" id="checks"></ul>
+</section>
+
+<footer>원본: 「제7장. Docker · MySQL 설치 및 SQL 기초」 교재 21쪽. Docker 부분은 아직 제 PC에서 실행하지 못했고, 나머지는 직접 확인했습니다.</footer>
+</main>
+</div>
+<script>
+window.PAGE = {
+  key: "ch7-checks", start: 3, done: [0, 1],
+  files: [
+    { n: ".env.example", when: "직접 작성", d: "MySQL DB 이름·계정·비밀번호·root 비밀번호·호스트·포트(3307)와 Django 비밀키 견본. compose.yaml과 settings.py가 같은 .env를 읽습니다." },
+    { n: "pyproject.toml", when: "uv init 후 수정 + uv add", d: "chapter07-mysql. django 5.2.7, mysqlclient(MySQL 드라이버), python-dotenv, 개발용 pytest·pytest-django." },
+    { n: "compose.yaml", when: "직접 작성", d: "MySQL 8.4 컨테이너 설계도. 이미지, 이름, 자동 재시작, 계정 환경변수, 3307→3306 포트, 데이터 볼륨, 초기화 SQL 폴더, 헬스체크." },
+    { n: "sql\\01_schema.sql", when: "직접 작성", d: "SQL 연습용 practice_products 테이블. CHECK로 가격·재고 음수 금지. 볼륨이 비어 있을 때 한 번만 자동 실행." },
+    { n: "sql\\02_seed.sql", when: "직접 작성", d: "노트북·마우스·키보드 3개 초기 데이터. 역시 첫 실행에만." },
+    { n: "sql\\03_queries.sql", when: "직접 작성", d: "CRUD 연습 문장 모음. 자동 실행이 아니라 mysql> 프롬프트에 직접 붙여넣어 실행합니다." },
+    { n: "config\\settings.py", when: "직접 작성", d: "ENGINE을 django.db.backends.mysql로, 접속 정보는 .env에서. TEST NAME은 test_shopdb.", a: "프로젝트 루트 static/을 찾도록 STATICFILES_DIRS를 추가했습니다 (교재엔 없어서 CSS 404)." },
+    { n: "shop\\models.py", when: "직접 작성", d: "Product: name(CharField 100), price·stock(PositiveIntegerField), Meta ordering = [\"id\"]." },
+    { n: "shop\\admin.py", when: "직접 작성", d: "@admin.register(Product) — 관리자 페이지 목록에 id·name·price·stock, 이름으로 검색." },
+    { n: "shop\\views.py", when: "직접 작성", d: "Product.objects.all()로 DB에서 읽어 템플릿에 넘깁니다. 6장의 data.py 자리가 ORM으로 바뀐 것." },
+    { n: "shop\\urls.py", when: "직접 작성", d: "'' → product_list 하나. app_name이 없어서 reverse(\"product_list\")로 부릅니다." },
+    { n: "shop\\migrations\\0001_initial.py", when: "makemigrations shop", d: "Product 테이블을 만드는 설계도. migrate가 이걸 보고 MySQL에 shop_product 테이블을 만듭니다." },
+    { n: "templates\\shop\\product_list.html", when: "직접 작성", d: "상품명·가격·재고 표. 비어 있으면 '등록된 상품이 없습니다.'" },
+    { n: "static\\shop\\style.css", when: "직접 작성", d: "가운데 흰 카드, 표 스타일." },
+    { n: "scripts\\seed_products.py", when: "직접 작성", d: "django.setup() 후 update_or_create로 기본 상품 3개를 넣습니다. 여러 번 실행해도 중복 생성되지 않습니다." },
+    { n: "tests\\test_product_model.py", when: "직접 작성", d: "상품 저장·조회, id 순서 정렬 — 2개. @pytest.mark.django_db로 테스트 DB 사용." },
+    { n: "tests\\test_views.py", when: "직접 작성", d: "상품 있는 목록, 빈 목록 — 2개." },
+    { n: "exercises\\solutions.py", when: "직접 작성", d: "ORM 과제: 10만 원 미만(price__lt), 재고 보유 수(stock__gt), 최고가(order_by(\"-price\").first())." },
+    { n: ".env", when: "Copy-Item 후 수정", gone: true, d: "실제 비밀번호·비밀키. Git에 올리지 않습니다." }
+  ],
+  checks: [
+    "chapter07_project 폴더와 .venv 생성",
+    "uv add django · mysqlclient · dotenv, --dev pytest",
+    "Docker Desktop 설치 · 실행 (Linux 컨테이너)",
+    "docker compose up -d → ps에서 healthy",
+    "mysql> 접속해서 03_queries.sql CRUD 실습",
+    "migrate · seed_products · runserver로 상품 표 확인",
+    "uv run pytest -v (MySQL 테스트 DB 권한 확인)",
+    "createsuperuser 후 /admin/ 에서 상품 추가",
+    "docker compose down 으로 정리"
+  ]
+};
+</script>
+
+<script>
+(function () {
+  var P = window.PAGE || {};
+  // 파일 탐색기
+  var tree = document.getElementById("tree"), detail = document.getElementById("detail");
+  if (tree && detail && P.files) {
+    var files = P.files;
+    var show = function (i) {
+      var f = files[i];
+      detail.innerHTML = "<h4></h4><span class='when'></span><p></p>" + (f.a ? "<p class='an'></p>" : "");
+      detail.querySelector("h4").textContent = f.n;
+      detail.querySelector(".when").textContent = "생기는 때: " + f.when;
+      detail.querySelector("p").textContent = f.d;
+      if (f.a) detail.querySelector(".an").textContent = f.a;
+      tree.querySelectorAll("button").forEach(function (b, j) { b.setAttribute("aria-pressed", j === i ? "true" : "false"); });
+    };
+    files.forEach(function (f, i) {
+      var li = document.createElement("li"), b = document.createElement("button");
+      b.type = "button"; b.id = "file-" + i; b.textContent = f.n;
+      if (f.indent) b.classList.add("in");
+      if (f.gone) b.classList.add("gone");
+      b.addEventListener("click", function () { show(i); });
+      li.appendChild(b); tree.appendChild(li);
+    });
+    show(P.start || 0);
+  }
+  // 완료 점검표
+  var ul = document.getElementById("checks"), count = document.getElementById("count");
+  if (ul && P.checks) {
+    var KEY = P.key || "checks", saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
+    var update = function () { if (count) count.textContent = ul.querySelectorAll("input:checked").length + " / " + P.checks.length; };
+    P.checks.forEach(function (t, i) {
+      var li = document.createElement("li"), label = document.createElement("label"), cb = document.createElement("input"), span = document.createElement("span");
+      cb.type = "checkbox"; cb.id = "chk-" + i;
+      cb.checked = (i in saved) ? saved[i] : !!(P.done && P.done.indexOf(i) >= 0);
+      span.textContent = t;
+      cb.addEventListener("change", function () {
+        saved[i] = cb.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+        update();
+      });
+      label.appendChild(cb); label.appendChild(span); li.appendChild(label); ul.appendChild(li);
+    });
+    update();
+  }
+})();
+
+</script>

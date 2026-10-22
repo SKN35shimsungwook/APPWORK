@@ -1,0 +1,7 @@
+/* 제7장 상품 목록 웹 화면의 기본 스타일이다. */
+body { margin: 0; font-family: Arial, "Malgun Gothic", sans-serif; background: #f4f7fb; color: #1f2937; }
+.container { max-width: 900px; margin: 64px auto; background: white; padding: 32px; border-radius: 14px; box-shadow: 0 8px 25px #0001; }
+h1 { color: #163a63; }
+table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+th, td { border-bottom: 1px solid #e5e7eb; padding: 14px; text-align: left; }
+th { background: #edf3fa; }

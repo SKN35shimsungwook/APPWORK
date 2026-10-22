@@ -1,0 +1,71 @@
+# Docker Desktop에서 MySQL 8.4 컨테이너를 실행한다.
+# Docker Compose에서 실행할 서비스(컨테이너)를 정의한다.
+services:
+  # MySQL 데이터베이스 서비스를 정의한다.
+  mysql:
+    # Docker Hub에서 MySQL 8.4 이미지를 사용한다.
+    image: mysql:8.4
+
+    # 생성되는 컨테이너의 이름을 지정한다.
+    container_name: chapter07-mysql
+
+    # 사용자가 중지하지 않는 한 컨테이너가 종료되면 자동으로 재시작한다.
+    restart: unless-stopped
+
+    # MySQL 컨테이너에서 사용할 환경변수를 설정한다.
+    # ${변수명:?오류 메시지}는 변수가 없거나 비어 있으면 실행을 중단한다.
+    environment:
+      # MySQL 컨테이너 최초 초기화 시 생성할 데이터베이스 이름이다.
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Set MYSQL_DATABASE in .env}
+
+      # MySQL 컨테이너 최초 초기화 시 생성할 일반 사용자 계정이다.
+      MYSQL_USER: ${MYSQL_USER:?Set MYSQL_USER in .env}
+
+      # 일반 사용자 계정에 설정할 비밀번호이다.
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set MYSQL_PASSWORD in .env}
+
+      # MySQL 관리자(root) 계정의 비밀번호이다.
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set MYSQL_ROOT_PASSWORD in .env}
+
+    # 호스트(Windows)와 컨테이너 사이의 포트를 연결한다.
+    ports:
+      # 127.0.0.1: Windows 컴퓨터 내부에서만 접근을 허용한다.
+      # ${MYSQL_PORT:-3307}: .env에 MYSQL_PORT가 없으면 3307을 사용한다.
+      # 3306: MySQL 컨테이너 내부에서 사용하는 기본 포트이다.
+      - "127.0.0.1:${MYSQL_PORT:-3307}:3306"
+
+    # 컨테이너에 연결할 데이터 저장소와 초기화 SQL 폴더를 지정한다.
+    volumes:
+      # MySQL 데이터를 Docker 볼륨에 저장하여 컨테이너 재생성 후에도 유지한다.
+      - mysql_data:/var/lib/mysql
+
+      # 현재 프로젝트의 sql 폴더를 MySQL 초기화 스크립트 폴더에 연결한다.
+      # :ro는 컨테이너에서 해당 폴더를 읽기 전용으로 사용한다는 의미이다.
+      # SQL 초기화 스크립트는 데이터 디렉터리가 비어 있을 때 실행된다.
+      - ./sql:/docker-entrypoint-initdb.d:ro
+
+    # MySQL 컨테이너가 정상적으로 응답하는지 주기적으로 검사한다.
+    healthcheck:
+      # CMD-SHELL: 컨테이너 내부 셸에서 검사 명령을 실행한다.
+      # $$: Docker Compose가 $를 먼저 해석하지 않고 컨테이너에 전달한다.
+      # MYSQL_PWD: MySQL 클라이언트에 비밀번호를 전달하는 환경변수이다.
+      # mysqladmin ping: MySQL 서버의 응답 여부를 확인한다.
+      # --silent: 불필요한 출력 메시지를 줄인다.
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$$MYSQL_PASSWORD\" mysqladmin ping -h 127.0.0.1 -u\"$$MYSQL_USER\" --silent"]
+
+      # 10초마다 상태를 검사한다.
+      interval: 10s
+
+      # 각 검사 명령이 5초 안에 완료되지 않으면 실패로 처리한다.
+      timeout: 5s
+
+      # 연속으로 12번 검사에 실패하면 unhealthy 상태로 판단한다.
+      retries: 12
+
+      # 컨테이너 시작 후 30초 동안은 초기화 준비 시간을 허용한다.
+      start_period: 30s
+
+# Docker Compose에서 사용할 이름 있는 볼륨을 선언한다.
+volumes:
+  # MySQL 데이터 파일을 영구적으로 보관하는 Docker 관리 볼륨이다.
+  mysql_data:
