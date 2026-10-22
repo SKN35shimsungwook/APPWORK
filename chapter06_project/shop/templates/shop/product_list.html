@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}상품 목록 | Chapter 06{% endblock %}
+{% block content %}
+<section class="intro">
+<p class="eyebrow">PRODUCT CATALOG</p>
+<h1>상품 목록</h1>
+<p>URL → View → Template의 연결을 확인한다.</p>
+</section>
+<form method="get" action="{% url 'shop:product_list' %}" class="search">
+<label for="search-q">상품 검색</label>
+<input id="search-q" type="search" name="q" value="{{ keyword }}" placeholder="상품명을 입력하세요">
+<button type="submit">검색</button>
+</form>
+<section class="product-grid" aria-label="상품 목록">
+  {% for product in products %}
+<article class="product-card">
+<p class="category">{{ product.category }}</p>
+<h2>{{ product.name }}</h2>
+<p class="price">{{ product.price }}원</p>
+    {% if product.stock > 0 %}<p class="in-stock">재고 {{ product.stock }}개</p>
+    {% else %}<p class="sold-out">품절</p>{% endif %}
+<a class="detail-link" href="{% url 'shop:product_detail' product.id %}">상세 보기 →</a>
+</article>
+  {% empty %}
+<p class="empty">검색 결과가 없습니다.</p>
+  {% endfor %}
+</section>
+{% endblock %}

@@ -1,0 +1,11 @@
+# 가상환경과 Python 캐시
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+# 로컬 데이터베이스와 비밀 정보
+*.sqlite3
+.env
+# 편집기 및 운영체제 파일
+.vscode/
+.DS_Store
