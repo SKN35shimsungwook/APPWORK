@@ -100,7 +100,7 @@ volumes:
 | `docker compose up -d` | 컨테이너를 백그라운드로 실행 (처음엔 이미지 다운로드) |
 | `docker compose ps` | 상태 확인, `healthy`가 나와야 준비 완료 |
 | `docker compose logs mysql` | MySQL 로그 보기 |
-| `docker compose exec mysql …` | 컨테이너 안에서 명령 실행 |
+| `docker compose exec mysql …` | 컨테이너 안에서 명령 실행 (mysql 접속 시 `--default-character-set=utf8mb4` 필수) |
 | `docker compose down` | 컨테이너 중지·삭제 (볼륨=데이터는 유지) |
 | `docker compose down -v` | 볼륨까지 삭제 (데이터 초기화) |
 
@@ -131,6 +131,11 @@ SELECT COUNT(*) AS product_count, SUM(stock) AS total_stock FROM practice_produc
 | `COUNT`, `SUM` | 집계 | `len`, `sum` |
 
 > `UPDATE`와 `DELETE`에 **WHERE를 빼면 테이블 전체**가 바뀌거나 지워집니다. 항상 WHERE부터 확인합니다.
+
+```powershell
+# 컨테이너 안의 mysql로 접속 (utf8mb4를 빼면 한글이 깨짐)
+docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" --default-character-set=utf8mb4'
+```
 
 `01_schema.sql`의 `CHECK (price >= 0)`, `CHECK (stock >= 0)`는 DB 자체가 음수를 거부하게 만듭니다. 2장에서 파이썬 코드로 하던 검사를 DB가 한 번 더 해 주는 셈입니다.
 
@@ -194,23 +199,47 @@ uv run pytest -v                         # 다른 창에서
 uv run python -m exercises.solutions
 ```
 
-## 8. 제 PC에서 확인한 것과 못 한 것
+## 8. 제 PC에서 실제로 실행한 결과
 
-이 PC에는 아직 Docker Desktop이 설치되어 있지 않아서, **MySQL을 실제로 띄우는 부분은 확인하지 못했습니다.**
+Docker Desktop(엔진 29.9.1)과 WSL2를 설치한 뒤 교재 순서대로 실행했습니다.
 
-| 항목 | 상태 |
+| 단계 | 결과 |
 |---|---|
-| `uv add` (django, mysqlclient, dotenv, pytest) | ✅ 설치됨, mysqlclient 2.3.0 |
-| `manage.py check` | ✅ no issues |
-| `makemigrations shop` | ✅ 교재 단계 22와 같은 0001_initial.py 생성 |
-| 모델·화면·테스트·시드·과제 코드 | ✅ DB만 SQLite로 바꾼 임시 설정으로 확인: pytest 4 passed, 상품 3개 등록, 과제 출력 정상 |
-| `docker compose up`, SQL 실습, MySQL 위 pytest | ⏳ Docker Desktop 설치 후 확인 필요 |
+| `docker compose config` | .env 값이 들어간 최종 설정 확인 (MySQL 8.4, 127.0.0.1:3307→3306, 볼륨, 헬스체크) |
+| `docker compose up -d` → `ps` | 약 35초 만에 `Up (healthy)` |
+| 초기화 SQL | `practice_products`에 노트북·마우스·키보드 (한글 정상, 마우스 재고 30) |
+| SQL 실습 (`sql/practice/03_queries.sql`) | 가격순 조회, 10만 원 미만 2개, 등록·수정·삭제, 집계 3종류·재고 합계 46 |
+| `migrate` · `seed_products` | `shop_product` 테이블 생성, "상품 등록 확인: 3개" |
+| `exercises.solutions` | 10만 원 미만 마우스·키보드 / 재고 보유 3 / 최고가 노트북 |
+| `pytest -v` (MySQL) | **4 passed** (test_shopdb 자동 생성·삭제) |
+| 브라우저 `http://127.0.0.1:8000/` | MySQL에서 읽은 상품 3개 표, CSS 200, `/admin/login/` 200 |
 
-## 9. 교재와 다르게 한 곳
+```
+mysql> SELECT id, name, price, stock FROM practice_products ORDER BY price DESC;
++----+-----------+---------+-------+
+| id | name      | price   | stock |
++----+-----------+---------+-------+
+|  1 | 노트북    | 1200000 |     5 |
+|  3 | 키보드    |   65000 |    12 |
+|  2 | 마우스    |   25000 |    30 |
++----+-----------+---------+-------+
+```
 
-| 내용 | 이유 |
-|---|---|
-| `settings.py`에 `STATICFILES_DIRS = [BASE_DIR / "static"]` 추가 | 7장은 CSS를 앱 폴더가 아닌 **프로젝트 루트** `static/shop/style.css`에 둡니다. 교재 설정만으로는 Django가 이 폴더를 몰라서 `findstatic`이 "No matching file found"를 냄 (직접 확인) → 화면에 CSS가 안 입혀짐 |
+### Docker를 설치하면서 겪은 것
+- 처음엔 이 계정에 관리자 권한이 없어서 `wsl --install`과 winget 설치가 `administrator privileges are required`로 막혔고, 승인 창도 뜨지 않았습니다.
+- 관리자 권한 PowerShell에서 `wsl --install --no-distribution`을 실행하니 먼저 손상된 WSL을 3.0.3으로 복구했고, **한 번 더** 실행해야 "가상 머신 플랫폼"이 켜졌습니다. 그다음 재부팅하고 나서야 Docker 엔진이 떴습니다.
+
+## 9. 교재와 다르게 한 곳 (실행하면서 직접 발견)
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 화면에 CSS가 안 입혀짐 (`findstatic`: No matching file found) | CSS가 프로젝트 루트 `static/`에 있는데 `STATICFILES_DIRS`가 없음 | `settings.py`에 `STATICFILES_DIRS = [BASE_DIR / "static"]` |
+| 초기 데이터 한글이 `ë…¸íŠ¸ë¶`으로 저장됨 | 컨테이너 mysql 클라이언트 기본 문자셋이 **latin1**이라 UTF-8 한글이 한 번 더 인코딩됨 (저장된 바이트 `C3ABE280A6…`, 정상은 `EB85B8…`) | SQL 파일 맨 위에 `SET NAMES utf8mb4;`, 접속할 때 `--default-character-set=utf8mb4` |
+| 첫 실행부터 마우스 재고가 29 | `sql/` 바로 아래의 `.sql`은 **전부** 자동 실행됨 → 연습용 `03_queries.sql`의 UPDATE까지 적용됨 (로그에 `running … 03_queries.sql`) | `sql/practice/03_queries.sql`로 이동 (하위 폴더는 `ignoring`) |
+| pytest 4개 모두 `Access denied … to database 'test_shopdb'` (1044) | MySQL 이미지는 `MYSQL_USER`에게 `shopdb` 권한만 줌 | `sql/03_test_privileges.sh` 추가: 첫 실행 때 `test_shopdb` 권한 부여 |
+| (예방) 셸 스크립트 줄바꿈 | Windows CRLF면 컨테이너 bash가 실행 못 함 | `.gitattributes`에 `*.sh text eol=lf` |
+
+볼륨을 지우고(`down -v`) 처음부터 다시 띄워서, 고친 설정만으로 위 결과가 그대로 나오는 것까지 확인했습니다.
 
 ## 10. 주요 오류와 해결
 
@@ -219,7 +248,8 @@ uv run python -m exercises.solutions
 | `docker compose up -d` 실패 | Docker Desktop을 먼저 실행하고 Linux 컨테이너 모드인지 확인 |
 | 3307 포트 사용 중 | .env의 `MYSQL_PORT`를 다른 포트로 (Django도 같은 값을 읽음) |
 | Access denied | .env 비밀번호와 볼륨에 처음 저장된 계정 정보가 다름 → DB 안에서 비밀번호 변경 또는 `down -v` 후 재초기화 |
-| 테스트 DB 생성 권한 없음 | MySQL 앱 계정에 `test_shopdb` 생성 권한 부여 (docker 이미지는 `MYSQL_USER`에게 `shopdb` 권한만 줌) |
+| 테스트 DB 생성 권한 없음 | 이 저장소는 `sql/03_test_privileges.sh`가 첫 실행 때 자동 부여. 기존 볼륨이면 root로 `GRANT ALL ON test_shopdb.* TO 'shopuser'@'%';` |
+| SQL 결과 한글이 깨짐 | mysql 접속에 `--default-character-set=utf8mb4`, SQL 파일에 `SET NAMES utf8mb4;` |
 | SQL 초기화 파일이 실행 안 됨 | 빈 볼륨의 첫 실행에만 적용 → 기존 볼륨에서는 수동 실행 |
 | mysqlclient 설치 실패 | Python 3.12와 호환 wheel 확인 |
 

@@ -11,7 +11,7 @@ SKN35 과정 **앱 개발 파트** 실습을 장(章)별로 모아 두는 저장
 | 4장 | HTML·CSS·JavaScript 상품 웹 화면 | [chapter04_project](chapter04_project) | [MD](notes/chapter04-풀이노트.md) · [HTML](notes/chapter04-풀이노트.html) | pytest 6 + 브라우저 |
 | 5장 | Git·GitHub와 Django 쇼핑몰 프로젝트 | [chapter05_project](chapter05_project) | [MD](notes/chapter05-풀이노트.md) · [HTML](notes/chapter05-풀이노트.html) | pytest 5 + Django 3 + 브라우저 |
 | 6장 | Django MTV · URL · View · Template | [chapter06_project](chapter06_project) | [MD](notes/chapter06-풀이노트.md) · [HTML](notes/chapter06-풀이노트.html) | pytest 10 + 브라우저 |
-| 7장 | Docker · MySQL 설치 및 SQL 기초 | [chapter07_project](chapter07_project) | [MD](notes/chapter07-풀이노트.md) · [HTML](notes/chapter07-풀이노트.html) | 코드 검증 완료 · MySQL 실행은 Docker 설치 후 |
+| 7장 | Docker · MySQL 설치 및 SQL 기초 | [chapter07_project](chapter07_project) | [MD](notes/chapter07-풀이노트.md) · [HTML](notes/chapter07-풀이노트.html) | MySQL에서 pytest 4 + SQL 실습 + 브라우저 |
 
 ```mermaid
 flowchart LR
@@ -56,7 +56,8 @@ Git은 이미 쓰고 있었지만 `add → commit → push`가 각각 어디로 
 
 ### 7장 · Docker와 MySQL
 SQLite를 MySQL로 바꾸는 장인데, MySQL을 PC에 직접 깔지 않고 Docker 컨테이너로 띄운다는 게 처음엔 낯설었습니다. 이미지(틀) · 컨테이너(실행 중인 것) · 볼륨(데이터 보관) · 포트 연결, 이 네 개로 정리하고 나서야 `compose.yaml`이 읽혔습니다.
-제 PC에는 아직 Docker Desktop이 없어서 MySQL을 실제로 띄우진 못했습니다. 대신 DB만 SQLite로 바꿔 끼운 임시 설정으로 모델·화면·테스트·과제 코드가 맞는지 먼저 확인했고, 그 과정에서 교재 설정만으로는 CSS를 못 찾는 문제를 발견했습니다.
+처음엔 PC에 Docker가 없어서 DB만 SQLite로 바꿔 끼운 임시 설정으로 코드부터 확인했습니다. 그다음 Docker Desktop을 설치하려는데 계정에 관리자 권한이 없어 WSL 설치가 막혔고, 관리자 PowerShell에서 `wsl --install`을 두 번 돌리고 재부팅하고 나서야 엔진이 떴습니다.
+막상 MySQL을 띄우니 교재대로는 안 되는 게 네 가지나 나왔습니다. 한글이 `ë…¸íŠ¸ë¶`으로 저장됐고(컨테이너 클라이언트가 latin1), 연습용 SQL이 첫 실행 때 자동으로 돌아 마우스 재고가 29로 시작했고, pytest는 테스트 DB 권한이 없어 전부 실패했습니다. 로그와 저장된 바이트를 하나씩 확인해서 고쳤고, 볼륨을 지우고 처음부터 다시 띄워도 그대로 되는 것까지 확인했습니다.
 
 ---
 
@@ -73,6 +74,9 @@ SQLite를 MySQL로 바꾸는 장인데, MySQL을 PC에 직접 깔지 않고 Dock
 | 5 | `verify.ps1` 마지막 줄이 `NO TESTS RAN` | `unittest discover`가 pytest 함수형 테스트를 못 찾음 | `uv run pytest -v`로 변경 |
 | 6 | `verify.ps1`의 "제6장 검증 완료"가 깨져 나옴 | PowerShell 5.1은 BOM 없는 UTF-8 스크립트를 cp949로 읽음 | `.ps1`을 BOM 있는 UTF-8로 저장 (5장도 같이) |
 | 7 | 화면에 CSS가 안 입혀짐 (`findstatic`: No matching file found) | CSS가 프로젝트 루트 `static/`에 있는데 `STATICFILES_DIRS` 설정이 없음 | `STATICFILES_DIRS = [BASE_DIR / "static"]` 추가 |
+| 7 | 초기 데이터 한글이 `ë…¸íŠ¸ë¶`으로 저장됨 | 컨테이너 mysql 클라이언트 기본 문자셋이 latin1 | SQL 파일에 `SET NAMES utf8mb4;`, 접속 시 `--default-character-set=utf8mb4` |
+| 7 | 첫 실행부터 마우스 재고 29 | `sql/` 바로 아래 `.sql`은 전부 자동 실행 → 연습용 UPDATE까지 적용 | `sql/practice/03_queries.sql`로 이동 |
+| 7 | pytest 4개 `Access denied … 'test_shopdb'` | MySQL 이미지는 앱 계정에 `shopdb` 권한만 줌 | `sql/03_test_privileges.sh`로 첫 실행 때 권한 자동 부여 |
 
 직접 낸 실수(`cd . 경로`, `--python3.12`, `..venv`, 교재의 `PS>`까지 복사)는 [1장 풀이노트](notes/chapter01-풀이노트.md#제가-실제로-낸-실수들)에 정리했습니다.
 
@@ -81,7 +85,7 @@ SQLite를 MySQL로 바꾸는 장인데, MySQL을 PC에 직접 깔지 않고 Dock
 - **역할을 나누면 바꾸기 쉬워진다.** 2장 단일 파일 → 3장 계층 분리 → 5장 프로젝트/앱 분리로 갈수록, 고칠 곳이 한 군데로 모였습니다.
 - **테스트는 무엇을 검사하는지 알아야 한다.** 4장 pytest는 파일 구조만, 5장은 HTTP 응답까지 봅니다. 화면 동작은 결국 직접 눌러 봐야 했습니다.
 - **비밀값은 코드에서 분리한다.** `.env`로 빼고, `.gitignore`로 막고, `.env.example`만 공유합니다.
-- **에러 메시지의 겉모습만 믿으면 안 된다.** 교재를 그대로 따라 했는데 나는 오류가 9개였고, 대부분 한글 Windows 환경(BOM, cp949)이나 경로 문제였습니다. 특히 BOM은 `.env`에서는 빼야 하고 `.ps1`에서는 넣어야 해서, "UTF-8"이라는 말만으로는 부족하다는 걸 배웠습니다.
+- **에러 메시지의 겉모습만 믿으면 안 된다.** 교재를 그대로 따라 했는데 나는 오류가 12개였고, 대부분 한글 환경(BOM, cp949, latin1)이나 경로·권한 문제였습니다. 특히 BOM은 `.env`에서는 빼야 하고 `.ps1`에서는 넣어야 해서, "UTF-8"이라는 말만으로는 부족하다는 걸 배웠습니다.
 - **Docker는 "설치된 프로그램을 상자째" 쓰는 방법이다.** DB를 PC에 직접 깔지 않아도 되고, 설정이 `compose.yaml` 파일로 남아 누구나 똑같이 띄울 수 있습니다.
 
 ---
@@ -174,7 +178,7 @@ uv run pytest -v                       # 다른 창에서, MySQL 실행 중이�
 uv run python -m exercises.solutions
 docker compose down                    # 끝나면 정리 (데이터는 볼륨에 남음)
 ```
-SQL 실습은 `docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE"'`로 접속해서 `sql/03_queries.sql`을 한 줄씩 실행합니다.
+SQL 실습은 `docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" --default-character-set=utf8mb4'`로 접속해서 `sql/practice/03_queries.sql`을 한 줄씩 실행합니다. Docker를 쓰려면 WSL2가 필요하고, 설치에는 관리자 권한과 재부팅이 필요합니다.
 
 ## 검증 결과 (제 PC에서 직접 실행)
 
@@ -186,7 +190,7 @@ SQL 실습은 `docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysq
 | 4 | 브라우저 조작 | 6개 표시 → 검색 1개 → 담기 총액 207,000원 → 삭제 → 비우기 0원, 375px에서 1열 |
 | 5 | `check` / `pytest` / `test shop` / 브라우저 | no issues / 5 passed / 3 OK / 카드 3개·품절 표시·`/health/` ok |
 | 6 | `check` / `pytest` / `verify.ps1` / 브라우저 | no issues / 10 passed / "제6장 검증 완료" / 목록 3개·`?q=마우스` 1개·상세·`/products/999/` 404 |
-| 7 | `check` / `makemigrations` / SQLite 대체 검증 | no issues / 교재와 같은 0001_initial.py / pytest 4 passed·시드 3개·과제 출력 정상. **MySQL 실행은 Docker 설치 후 확인 예정** |
+| 7 | `compose up` / SQL 실습 / `migrate`·시드 / `pytest` / 브라우저 | 35초 만에 healthy / CRUD·집계(3종류, 재고 46) / shop_product 생성·3개 등록 / MySQL에서 4 passed / 상품 표·CSS 200·`/admin/login/` 200 |
 
 ---
 
@@ -219,7 +223,7 @@ APPWORK/
 ├── chapter04_project/             # index.html, assets/(style.css·app.js), tests/
 ├── chapter05_project/             # config/, shop/(views·urls·templates·static), tests/, scripts/verify.ps1
 ├── chapter06_project/             # shop/(data·views·urls), templates/base.html 상속, tests/, exercises/
-└── chapter07_project/             # compose.yaml, sql/, shop/(models·admin·migrations), scripts/seed_products.py
+└── chapter07_project/             # compose.yaml, sql/(초기화·권한 스크립트, practice/), shop/(models·admin·migrations), scripts/seed_products.py
 ```
 
 ## 참고

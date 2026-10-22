@@ -227,7 +227,7 @@ footer { margin-top: 3rem; font-size: .82rem; color: var(--muted); border-top: 1
     <li><a href="#sql">SQL CRUD</a></li>
     <li><a href="#orm">Django 연결·ORM</a></li>
     <li><a href="#run">실행 순서</a></li>
-    <li><a href="#status">확인한 것·못 한 것</a></li>
+    <li><a href="#status">실제 실행 결과</a></li>
     <li><a href="#diff">교재와 다른 곳</a></li>
     <li><a href="#trouble">오류 해결</a></li>
     <li><a href="#quiz">확인 문제</a></li>
@@ -391,7 +391,7 @@ volumes:
 </section>
 
 <section id="sql">
-  <h2>SQL CRUD<small>sql/03_queries.sql</small></h2>
+  <h2>SQL CRUD<small>sql/practice/03_queries.sql</small></h2>
 <pre><code><span class="c">-- R 조회</span>
 SELECT id, name, price, stock FROM practice_products ORDER BY price DESC;
 SELECT name, price FROM practice_products WHERE price &lt; 100000;
@@ -420,7 +420,7 @@ SELECT COUNT(*) AS product_count, SUM(stock) AS total_stock FROM practice_produc
   </div>
   <p><code>01_schema.sql</code>의 <code>CHECK (price &gt;= 0)</code>, <code>CHECK (stock &gt;= 0)</code>는 DB가 음수를 거부하게 만듭니다. 2장에서 파이썬으로 하던 검사를 DB가 한 번 더 해 줍니다.</p>
 <pre><code><span class="c"># 내 PC에 MySQL 클라이언트를 설치하지 않고 컨테이너 안에서 접속</span>
-docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE"'
+docker compose exec mysql sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -u"$MYSQL_USER" "$MYSQL_DATABASE" <span class="k">--default-character-set=utf8mb4</span>'
 mysql&gt; SHOW TABLES;      <span class="c"># practice_products</span></code></pre>
 </section>
 
@@ -472,30 +472,38 @@ uv run python -m exercises.solutions</code></pre>
 </section>
 
 <section id="status">
-  <h2>제 PC에서 확인한 것과 못 한 것<small>Docker Desktop 미설치 상태</small></h2>
+  <h2>제 PC에서 실제로 실행한 결과<small>Docker Desktop 엔진 29.9.1 · WSL2</small></h2>
   <div class="scroll"><table>
-    <thead><tr><th>항목</th><th>상태</th></tr></thead>
+    <thead><tr><th>단계</th><th>결과</th></tr></thead>
     <tbody>
-      <tr><td>uv add (django, mysqlclient, dotenv, pytest)</td><td>✅ 설치됨, mysqlclient 2.3.0</td></tr>
-      <tr><td>manage.py check</td><td>✅ no issues</td></tr>
-      <tr><td>makemigrations shop</td><td>✅ 교재 단계 22와 같은 0001_initial.py</td></tr>
-      <tr><td>모델·화면·테스트·시드·과제 코드</td><td>✅ DB만 SQLite로 바꾼 임시 설정으로 확인: pytest 4 passed, 상품 3개 등록, 과제 출력 정상</td></tr>
-      <tr><td>docker compose up, SQL 실습, MySQL 위 pytest</td><td>⏳ Docker Desktop 설치 후 확인 필요</td></tr>
+      <tr><td>docker compose up -d → ps</td><td>약 35초 만에 Up (healthy)</td></tr>
+      <tr><td>초기화 SQL</td><td>practice_products 노트북·마우스·키보드 (한글 정상, 마우스 재고 30)</td></tr>
+      <tr><td>SQL 실습</td><td>가격순 조회, 10만 원 미만 2개, 등록·수정·삭제, 집계 3종류·재고 46</td></tr>
+      <tr><td>migrate · seed_products</td><td>shop_product 생성, "상품 등록 확인: 3개"</td></tr>
+      <tr><td>exercises.solutions</td><td>마우스·키보드 / 재고 보유 3 / 최고가 노트북</td></tr>
+      <tr><td>pytest -v (MySQL)</td><td><b>4 passed</b> · test_shopdb 자동 생성·삭제</td></tr>
+      <tr><td>브라우저</td><td>MySQL에서 읽은 상품 3개 표, CSS 200, /admin/login/ 200</td></tr>
     </tbody>
   </table></div>
-<div class="out">$ uv run python -m exercises.solutions   (SQLite 대체 확인)
-<b>[과제 1] 10만 원 미만 상품
-마우스 25000
-키보드 65000
-[과제 2] 재고 보유 상품 수: 3
-[과제 3] 최고가 상품: 노트북</b></div>
+<div class="out">mysql&gt; SELECT id, name, price, stock FROM practice_products ORDER BY price DESC;
+<b>| 1 | 노트북 | 1200000 |  5 |
+| 3 | 키보드 |   65000 | 12 |
+| 2 | 마우스 |   25000 | 30 |</b>
+mysql&gt; SELECT COUNT(*) AS product_count, SUM(stock) AS total_stock FROM practice_products;
+<b>| 3 | 46 |</b></div>
+  <div class="note"><strong>Docker 설치에서 겪은 것:</strong> 이 계정은 관리자 권한이 없어 처음엔 WSL 설치가 막혔고 승인 창도 뜨지 않았습니다. 관리자 PowerShell에서 <code>wsl --install --no-distribution</code>을 실행하니 먼저 손상된 WSL을 복구했고, <strong>한 번 더</strong> 실행해야 "가상 머신 플랫폼"이 켜졌습니다. 재부팅 후 Docker 엔진이 떴습니다.</div>
 </section>
 
 <section id="diff">
-  <h2>교재와 다르게 한 곳</h2>
+  <h2>교재와 다르게 한 곳<small>실행하면서 직접 발견</small></h2>
   <div class="oops">
-    <div class="oop"><div class="bad"><span class="lbl">교재 settings.py</span><code>STATICFILES_DIRS 없음</code><small>7장은 CSS를 프로젝트 루트 static/shop/style.css에 두는데 Django가 이 폴더를 몰라서 findstatic이 "No matching file found" (직접 확인) → 화면에 CSS 안 입혀짐</small></div><div class="good"><span class="lbl">수정</span><code>STATICFILES_DIRS = [BASE_DIR / "static"]</code><small>추가 후 findstatic이 파일을 찾음</small></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">CSS 404</span><code>STATICFILES_DIRS 없음</code><small>CSS가 프로젝트 루트 static/에 있는데 Django가 모름 · findstatic "No matching file found"</small></div><div class="good"><span class="lbl">수정</span><code>STATICFILES_DIRS = [BASE_DIR / "static"]</code></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">한글 깨짐</span><code>노트북 → ë…¸íŠ¸ë¶</code><small>컨테이너 mysql 클라이언트 기본 문자셋이 latin1 · 저장 바이트 C3ABE280A6… (정상은 EB85B8…)</small></div><div class="good"><span class="lbl">수정</span><code>SET NAMES utf8mb4;</code><small>SQL 파일 맨 위 + 접속 시 --default-character-set=utf8mb4</small></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">재고 29</span><code>sql/03_queries.sql 자동 실행</code><small>sql/ 바로 아래 .sql은 첫 실행 때 전부 실행 → 연습용 UPDATE가 미리 적용</small></div><div class="good"><span class="lbl">수정</span><code>sql/practice/03_queries.sql</code><small>하위 폴더는 "ignoring"으로 건너뜀</small></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">pytest 4 ERROR</span><code>Access denied … 'test_shopdb' (1044)</code><small>MySQL 이미지는 MYSQL_USER에게 shopdb 권한만 줌</small></div><div class="good"><span class="lbl">수정</span><code>sql/03_test_privileges.sh</code><small>첫 실행 때 test_shopdb 권한 자동 부여 → 4 passed</small></div></div>
+    <div class="oop"><div class="bad"><span class="lbl">예방</span><code>.sh가 CRLF 줄바꿈</code><small>컨테이너 bash가 실행하지 못함</small></div><div class="good"><span class="lbl">수정</span><code>.gitattributes: *.sh text eol=lf</code></div></div>
   </div>
+  <p>볼륨을 지우고(<code>down -v</code>) 처음부터 다시 띄워서, 고친 설정만으로 같은 결과가 나오는 것까지 확인했습니다.</p>
 </section>
 
 <section id="trouble">
@@ -506,7 +514,8 @@ uv run python -m exercises.solutions</code></pre>
       <tr><td>docker compose up -d 실패</td><td>Docker Desktop을 먼저 실행하고 Linux 컨테이너 모드 확인</td></tr>
       <tr><td>3307 포트 사용 중</td><td>.env의 MYSQL_PORT를 다른 포트로 (Django도 같은 값을 읽음)</td></tr>
       <tr><td>Access denied</td><td>.env 비밀번호와 볼륨에 처음 저장된 계정이 다름 → DB 안에서 변경 또는 down -v 후 재초기화</td></tr>
-      <tr><td>테스트 DB 생성 권한 없음</td><td>MySQL 앱 계정에 test_shopdb 생성 권한 부여 (이미지는 MYSQL_USER에게 shopdb 권한만 줌)</td></tr>
+      <tr><td>테스트 DB 생성 권한 없음</td><td>이 저장소는 sql/03_test_privileges.sh가 자동 부여. 기존 볼륨이면 root로 GRANT ALL ON test_shopdb.* TO 'shopuser'@'%';</td></tr>
+      <tr><td>SQL 결과 한글이 깨짐</td><td>접속에 --default-character-set=utf8mb4, SQL 파일에 SET NAMES utf8mb4;</td></tr>
       <tr><td>SQL 초기화 파일이 실행 안 됨</td><td>빈 볼륨의 첫 실행에만 적용 → 기존 볼륨에서는 수동 실행</td></tr>
       <tr><td>mysqlclient 설치 실패</td><td>Python 3.12와 호환 wheel 확인</td></tr>
     </tbody>
@@ -528,19 +537,21 @@ uv run python -m exercises.solutions</code></pre>
   <ul class="checks" id="checks"></ul>
 </section>
 
-<footer>원본: 「제7장. Docker · MySQL 설치 및 SQL 기초」 교재 21쪽. Docker 부분은 아직 제 PC에서 실행하지 못했고, 나머지는 직접 확인했습니다.</footer>
+<footer>원본: 「제7장. Docker · MySQL 설치 및 SQL 기초」 교재 21쪽. Docker Desktop 설치 후 제 PC에서 MySQL까지 직접 실행해 확인했습니다.</footer>
 </main>
 </div>
 <script>
 window.PAGE = {
-  key: "ch7-checks", start: 3, done: [0, 1],
+  key: "ch7-checks", start: 3, done: [0, 1, 2, 3, 4, 5, 6, 8],
   files: [
     { n: ".env.example", when: "직접 작성", d: "MySQL DB 이름·계정·비밀번호·root 비밀번호·호스트·포트(3307)와 Django 비밀키 견본. compose.yaml과 settings.py가 같은 .env를 읽습니다." },
     { n: "pyproject.toml", when: "uv init 후 수정 + uv add", d: "chapter07-mysql. django 5.2.7, mysqlclient(MySQL 드라이버), python-dotenv, 개발용 pytest·pytest-django." },
     { n: "compose.yaml", when: "직접 작성", d: "MySQL 8.4 컨테이너 설계도. 이미지, 이름, 자동 재시작, 계정 환경변수, 3307→3306 포트, 데이터 볼륨, 초기화 SQL 폴더, 헬스체크." },
-    { n: "sql\\01_schema.sql", when: "직접 작성", d: "SQL 연습용 practice_products 테이블. CHECK로 가격·재고 음수 금지. 볼륨이 비어 있을 때 한 번만 자동 실행." },
+    { n: "sql\\01_schema.sql", when: "직접 작성", d: "맨 위 SET NAMES utf8mb4(한글 깨짐 방지) 다음, SQL 연습용 practice_products 테이블. CHECK로 가격·재고 음수 금지. 볼륨이 비어 있을 때 한 번만 자동 실행." },
     { n: "sql\\02_seed.sql", when: "직접 작성", d: "노트북·마우스·키보드 3개 초기 데이터. 역시 첫 실행에만." },
-    { n: "sql\\03_queries.sql", when: "직접 작성", d: "CRUD 연습 문장 모음. 자동 실행이 아니라 mysql> 프롬프트에 직접 붙여넣어 실행합니다." },
+    { n: "sql\\03_test_privileges.sh", when: "추가 (교재에 없음)", d: "첫 실행 때 root로 MYSQL_USER에게 test_<DB이름> 권한을 줍니다. 이게 없으면 pytest가 테스트 DB를 못 만들어 Access denied." },
+    { n: "sql\\practice\\03_queries.sql", when: "직접 작성", d: "CRUD 연습 문장 모음. mysql> 프롬프트에 직접 붙여넣어 실행합니다.", a: "sql/ 바로 아래에 두면 첫 실행 때 자동 실행돼 버려서 practice/ 하위 폴더로 옮겼습니다." },
+    { n: ".gitattributes", when: "추가", d: "*.sh 파일을 LF 줄바꿈으로 고정합니다. 컨테이너 안 bash는 Windows 줄바꿈(CRLF)을 실행하지 못합니다." },
     { n: "config\\settings.py", when: "직접 작성", d: "ENGINE을 django.db.backends.mysql로, 접속 정보는 .env에서. TEST NAME은 test_shopdb.", a: "프로젝트 루트 static/을 찾도록 STATICFILES_DIRS를 추가했습니다 (교재엔 없어서 CSS 404)." },
     { n: "shop\\models.py", when: "직접 작성", d: "Product: name(CharField 100), price·stock(PositiveIntegerField), Meta ordering = [\"id\"]." },
     { n: "shop\\admin.py", when: "직접 작성", d: "@admin.register(Product) — 관리자 페이지 목록에 id·name·price·stock, 이름으로 검색." },
